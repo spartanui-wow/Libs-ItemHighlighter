@@ -18,36 +18,18 @@
 ---Logger table returned by RegisterAddonCategory
 ---@alias ComplexLoggers table<string, SimpleLogger>
 
----@class SUI.Logger
+---@class LibAT.Logger
 ---@field RegisterAddon fun(addonName: string): SimpleLogger
 ---@field RegisterAddonCategory fun(addonName: string, subcategories: string[]): ComplexLoggers
 
 -- Core Addon Classes
 ---@class LibsIHCore: AceAddon, AceTimer-3.0, AceHook-3.0, AceEvent-3.0
----@field DB Profile The addon's profile database
+---@field DB LibsIH.DB.Profile The addon's profile database
 ---@field GlobalDB GlobalDB The addon's global database
 ---@field DataBase AceDB The AceDB instance
 ---@field RegisterBagSystem fun(self: LibsIHCore, name: string, integration: BagSystemIntegration): nil
 ---@field GetActiveBagSystem fun(self: LibsIHCore): BagSystemIntegration?
 ---@field SetupOptions fun(self: LibsIHCore): nil
-
--- Configuration Profile
----@class Profile
----@field FilterGenericUse boolean Highlight generic 'Use:' items
----@field FilterToys boolean Highlight toy items that can be learned
----@field FilterAppearance boolean Highlight items that teach appearances/transmog
----@field FilterMounts boolean Highlight mount teaching items
----@field FilterRepGain boolean Highlight items that give reputation
----@field FilterCompanion boolean Highlight companion and pet items
----@field FilterCurios boolean Highlight curio items
----@field FilterKnowledge boolean Highlight knowledge/profession learning items
----@field FilterContainers boolean Highlight containers with 'Right click to open' text
----@field CreatableItem boolean Highlight items that create class-specific gear
----@field ShowOpenableIndicator boolean Display animated corner widget on openable items
----@field AnimationCycleTime number Time to fade from one color to another (seconds)
----@field TimeBetweenCycles number Time to pause at each color (seconds)
----@field AnimationUpdateInterval number How often to update the animation (seconds)
----@field BagSystem string Which bag system to use ("auto", "baganator", "blizzard", etc.)
 
 -- Global Database
 ---@class GlobalDB
