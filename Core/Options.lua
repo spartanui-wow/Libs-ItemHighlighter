@@ -291,25 +291,16 @@ local function GetOptions()
 				end,
 				order = 11
 			},
-			filterHeader = {
-				type = 'header',
+			itemTypeFilters = {
+				type = 'group',
 				name = 'Item Type Filters',
-				order = 20
-			},
-			filterDesc = {
-				type = 'description',
-				name = 'Choose which types of openable items to highlight:',
-				order = 21
-			},
-			filterToys = {
-				type = 'toggle',
-				name = 'Toys',
-				desc = 'Highlight toy items that can be learned',
-				get = function()
-					return addon.DB.FilterToys
+				inline = true,
+				order = 20,
+				get = function(info)
+					return addon.DB[info[#info]]
 				end,
-				set = function(_, value)
-					addon.DB.FilterToys = value
+				set = function(info, value)
+					addon.DB[info[#info]] = value
 					-- Reset cache since filter criteria changed
 					addon.GlobalDB.itemCache.openable = {}
 					addon.GlobalDB.itemCache.notOpenable = {}
@@ -318,178 +309,73 @@ local function GetOptions()
 						bagSystem.RefreshAllCornerWidgets()
 					end
 				end,
-				order = 30
-			},
-			filterAppearance = {
-				type = 'toggle',
-				name = 'Appearances',
-				desc = 'Highlight items that teach appearances/transmog',
-				get = function()
-					return addon.DB.FilterAppearance
-				end,
-				set = function(_, value)
-					addon.DB.FilterAppearance = value
-					-- Reset cache since filter criteria changed
-					addon.GlobalDB.itemCache.openable = {}
-					addon.GlobalDB.itemCache.notOpenable = {}
-					local bagSystem = addon:GetActiveBagSystem()
-					if bagSystem and bagSystem.RefreshAllCornerWidgets then
-						bagSystem.RefreshAllCornerWidgets()
-					end
-				end,
-				order = 31
-			},
-			filterMounts = {
-				type = 'toggle',
-				name = 'Mounts',
-				desc = 'Highlight mount teaching items',
-				get = function()
-					return addon.DB.FilterMounts
-				end,
-				set = function(_, value)
-					addon.DB.FilterMounts = value
-					-- Reset cache since filter criteria changed
-					addon.GlobalDB.itemCache.openable = {}
-					addon.GlobalDB.itemCache.notOpenable = {}
-					local bagSystem = addon:GetActiveBagSystem()
-					if bagSystem and bagSystem.RefreshAllCornerWidgets then
-						bagSystem.RefreshAllCornerWidgets()
-					end
-				end,
-				order = 32
-			},
-			filterCompanion = {
-				type = 'toggle',
-				name = 'Companions/Pets',
-				desc = 'Highlight companion and pet items',
-				get = function()
-					return addon.DB.FilterCompanion
-				end,
-				set = function(_, value)
-					addon.DB.FilterCompanion = value
-					-- Reset cache since filter criteria changed
-					addon.GlobalDB.itemCache.openable = {}
-					addon.GlobalDB.itemCache.notOpenable = {}
-					local bagSystem = addon:GetActiveBagSystem()
-					if bagSystem and bagSystem.RefreshAllCornerWidgets then
-						bagSystem.RefreshAllCornerWidgets()
-					end
-				end,
-				order = 33
-			},
-			filterRepGain = {
-				type = 'toggle',
-				name = 'Reputation Items',
-				desc = 'Highlight items that give reputation',
-				get = function()
-					return addon.DB.FilterRepGain
-				end,
-				set = function(_, value)
-					addon.DB.FilterRepGain = value
-					-- Reset cache since filter criteria changed
-					addon.GlobalDB.itemCache.openable = {}
-					addon.GlobalDB.itemCache.notOpenable = {}
-					local bagSystem = addon:GetActiveBagSystem()
-					if bagSystem and bagSystem.RefreshAllCornerWidgets then
-						bagSystem.RefreshAllCornerWidgets()
-					end
-				end,
-				order = 34
-			},
-			filterCurios = {
-				type = 'toggle',
-				name = 'Curios',
-				desc = 'Highlight curio items',
-				get = function()
-					return addon.DB.FilterCurios
-				end,
-				set = function(_, value)
-					addon.DB.FilterCurios = value
-					-- Reset cache since filter criteria changed
-					addon.GlobalDB.itemCache.openable = {}
-					addon.GlobalDB.itemCache.notOpenable = {}
-					local bagSystem = addon:GetActiveBagSystem()
-					if bagSystem and bagSystem.RefreshAllCornerWidgets then
-						bagSystem.RefreshAllCornerWidgets()
-					end
-				end,
-				order = 35
-			},
-			filterContainers = {
-				type = 'toggle',
-				name = 'Containers',
-				desc = "Highlight containers with 'Right click to open' text (caches, chests, etc.)",
-				get = function()
-					return addon.DB.FilterContainers
-				end,
-				set = function(_, value)
-					addon.DB.FilterContainers = value
-					-- Reset cache since filter criteria changed
-					addon.GlobalDB.itemCache.openable = {}
-					addon.GlobalDB.itemCache.notOpenable = {}
-					local bagSystem = addon:GetActiveBagSystem()
-					if bagSystem and bagSystem.RefreshAllCornerWidgets then
-						bagSystem.RefreshAllCornerWidgets()
-					end
-				end,
-				order = 36
-			},
-			filterKnowledge = {
-				type = 'toggle',
-				name = 'Knowledge Items',
-				desc = 'Highlight knowledge/profession learning items',
-				get = function()
-					return addon.DB.FilterKnowledge
-				end,
-				set = function(_, value)
-					addon.DB.FilterKnowledge = value
-					-- Reset cache since filter criteria changed
-					addon.GlobalDB.itemCache.openable = {}
-					addon.GlobalDB.itemCache.notOpenable = {}
-					local bagSystem = addon:GetActiveBagSystem()
-					if bagSystem and bagSystem.RefreshAllCornerWidgets then
-						bagSystem.RefreshAllCornerWidgets()
-					end
-				end,
-				order = 37
-			},
-			filterCreatable = {
-				type = 'toggle',
-				name = 'Creatable Items',
-				desc = 'Highlight items that create class-specific gear',
-				get = function()
-					return addon.DB.CreatableItem
-				end,
-				set = function(_, value)
-					addon.DB.CreatableItem = value
-					-- Reset cache since filter criteria changed
-					addon.GlobalDB.itemCache.openable = {}
-					addon.GlobalDB.itemCache.notOpenable = {}
-					local bagSystem = addon:GetActiveBagSystem()
-					if bagSystem and bagSystem.RefreshAllCornerWidgets then
-						bagSystem.RefreshAllCornerWidgets()
-					end
-				end,
-				order = 38
-			},
-			filterGeneric = {
-				type = 'toggle',
-				name = 'Generic Use Items',
-				desc = "Highlight generic 'Use:' items (may be noisy)",
-				get = function()
-					return addon.DB.FilterGenericUse
-				end,
-				set = function(_, value)
-					addon.DB.FilterGenericUse = value
-					-- Reset cache since filter criteria changed
-					addon.GlobalDB.itemCache.openable = {}
-					addon.GlobalDB.itemCache.notOpenable = {}
-					local bagSystem = addon:GetActiveBagSystem()
-					if bagSystem and bagSystem.RefreshAllCornerWidgets then
-						bagSystem.RefreshAllCornerWidgets()
-					end
-				end,
-				order = 39
+				args = {
+					filterDesc = {
+						type = 'description',
+						name = 'Choose which types of openable items to highlight:',
+						order = 1
+					},
+					FilterToys = {
+						type = 'toggle',
+						name = 'Toys',
+						desc = 'Highlight toy items that can be learned',
+						order = 10
+					},
+					FilterAppearance = {
+						type = 'toggle',
+						name = 'Appearances',
+						desc = 'Highlight items that teach appearances/transmog',
+						order = 11
+					},
+					FilterMounts = {
+						type = 'toggle',
+						name = 'Mounts',
+						desc = 'Highlight mount teaching items',
+						order = 12
+					},
+					FilterCompanion = {
+						type = 'toggle',
+						name = 'Companions/Pets',
+						desc = 'Highlight companion and pet items',
+						order = 13
+					},
+					FilterRepGain = {
+						type = 'toggle',
+						name = 'Reputation Items',
+						desc = 'Highlight items that give reputation',
+						order = 14
+					},
+					FilterCurios = {
+						type = 'toggle',
+						name = 'Curios',
+						desc = 'Highlight curio items',
+						order = 15
+					},
+					FilterContainers = {
+						type = 'toggle',
+						name = 'Containers',
+						desc = "Highlight containers with 'Right click to open' text (caches, chests, etc.)",
+						order = 16
+					},
+					FilterKnowledge = {
+						type = 'toggle',
+						name = 'Knowledge Items',
+						desc = 'Highlight knowledge/profession learning items',
+						order = 17
+					},
+					CreatableItem = {
+						type = 'toggle',
+						name = 'Creatable Items',
+						desc = 'Highlight items that create class-specific gear',
+						order = 18
+					},
+					FilterGenericUse = {
+						type = 'toggle',
+						name = 'Generic Use Items',
+						desc = "Highlight generic 'Use:' items (may be noisy)",
+						order = 19
+					}
+				}
 			},
 			cacheHeader = {
 				type = 'header',
