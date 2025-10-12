@@ -1,4 +1,4 @@
-## Interface: 110200
+## Interface: 110205
 ## Title: Lib's - Item Highlighter
 ## Notes: Highlights openable items in your bags - supports multiple bag addons
 ## IconTexture: Interface/Addons/Libs-ItemHighlighter/Logo-Icon
