@@ -17,17 +17,24 @@ local profile = {
 	FilterRepGain = true,
 	FilterCompanion = true,
 	FilterCurios = true,
+	FilterDelversBounty = true,
 	FilterKnowledge = true,
 	FilterContainers = true,
 	CreatableItem = true,
-	ShowGlow = true, -- Show animated blue-to-green glow
-	ShowIndicator = true, -- Show static treasure map icon
-	-- Animation Settings
+	ShowGlow = true,
+	ShowIndicator = true,
 	AnimationCycleTime = 0.5,
 	TimeBetweenCycles = 0.10,
 	AnimationUpdateInterval = 0.1,
-	-- Bag System Selection
-	BagSystem = 'auto' -- "auto", "baganator", "blizzard", "bagnon", "adibags"
+	BagSystem = 'auto',
+	-- Custom whitelist/blacklist
+	customWhitelist = {}, -- [itemID] = itemName
+	customBlacklist = {}, -- [itemID] = itemName
+	pageSize = 20,
+	currentWhitelistPage = 1,
+	currentBlacklistPage = 1,
+	searchWhitelist = '',
+	searchBlacklist = ''
 }
 
 -- Localization
@@ -62,24 +69,24 @@ end
 
 local REP_USE_TEXT = QUEST_REPUTATION_REWARD_TOOLTIP:match('%%d%s*(.-)%s*%%s') or GetLocaleString('reputation with')
 
--- SpartanUI Logger Integration
+-- LibAT Logger Integration
 local logger = nil
 
--- Initialize SpartanUI Logger integration
-local function InitializeSUILogger()
-	if SUI and SUI.Logger and SUI.Logger.RegisterAddon then
-		-- Register with SpartanUI Logger for proper external addon integration
-		logger = SUI.Logger.RegisterAddon("Lib's - Item Highlighter")
+-- Initialize LibAT Logger integration
+local function InitializeLibATLogger()
+	if LibAT and LibAT.Logger and LibAT.Logger.RegisterAddon then
+		-- Register with LibAT Logger for proper external addon integration
+		logger = LibAT.Logger.RegisterAddon("Lib's - Item Highlighter")
 		return true
 	end
 	return false
 end
 
--- Logging function with SpartanUI integration
+-- Logging function with LibAT integration
 local function Log(msg, level)
 	if logger then
-		-- Use registered SpartanUI logger
-		logger(tostring(msg), level or 'info')
+		-- Use new logger object API
+		logger.log(tostring(msg), level or 'info')
 	end
 end
 
@@ -125,6 +132,22 @@ local function CheckItem(itemDetails)
 
 	-- Get itemID for caching
 	local itemID = C_Item.GetItemInfoInstant(itemLink)
+
+	-- Check custom whitelist/blacklist FIRST (highest priority)
+	if itemID and addon.DB then
+		-- Whitelist: always highlight if in whitelist
+		if addon.DB.customWhitelist[itemID] then
+			Log('Item ' .. itemID .. ' is in custom whitelist - forcing highlight', 'debug')
+			return true
+		end
+
+		-- Blacklist: never highlight if in blacklist
+		if addon.DB.customBlacklist[itemID] then
+			Log('Item ' .. itemID .. ' is in custom blacklist - skipping highlight', 'debug')
+			return false
+		end
+	end
+
 	if itemID and addon.GlobalDB and addon.GlobalDB.itemCache then
 		-- Check cache first
 		if addon.GlobalDB.itemCache.openable[itemID] then
@@ -137,8 +160,12 @@ local function CheckItem(itemDetails)
 	end
 
 	-- Quick check for common openable item types
-	local _, _, _, _, _, itemType, itemSubType = C_Item.GetItemInfo(itemLink)
+	local itemName, _, _, _, _, itemType, itemSubType = C_Item.GetItemInfo(itemLink)
 	local Consumable = itemType == 'Consumable' or itemSubType == 'Consumables'
+
+	if addon.DB.FilterDelversBounty and itemName and string.find(itemName, 'Delver') and string.find(itemName, 'Bounty') then
+		return CacheOpenableResult(itemID, true)
+	end
 
 	if Consumable and itemSubType and string.find(itemSubType, 'Curio') and addon.DB.FilterCurios then
 		return CacheOpenableResult(itemID, true)
@@ -247,6 +274,305 @@ local function CheckItem(itemDetails)
 	return CacheOpenableResult(itemID, false)
 end
 
+---Debug function to explain why an item is or isn't marked as openable
+---@param itemID number The item ID to debug
+function addon:DebugItemOpenability(itemID)
+	if not itemID then
+		print('|cffFFFF00ItemHighlighter Debug:|r Item ID is required')
+		return
+	end
+
+	-- Get item info
+	local itemLink = select(2, C_Item.GetItemInfo(itemID))
+	if not itemLink then
+		print('|cffFFFF00ItemHighlighter Debug:|r Item ' .. itemID .. ' not found or not loaded')
+		return
+	end
+
+	local name, _, quality, _, _, itemType, itemSubType = C_Item.GetItemInfo(itemID)
+	local qualityColor = ITEM_QUALITY_COLORS[quality] and ITEM_QUALITY_COLORS[quality].hex or 'ffffffff'
+
+	print('|cffFFFF00=== ItemHighlighter Debug ===|r')
+	print(string.format('Item: |c%s%s|r (ID: %d)', qualityColor, name or 'Unknown', itemID))
+	print(string.format('Type: %s / %s', itemType or 'nil', itemSubType or 'nil'))
+	print(string.format('Link: %s', itemLink))
+
+	-- Check cache first
+	if addon.GlobalDB and addon.GlobalDB.itemCache then
+		if addon.GlobalDB.itemCache.openable[itemID] then
+			print('|cff00FF00CACHED RESULT:|r Item is marked as openable')
+			return
+		elseif addon.GlobalDB.itemCache.notOpenable[itemID] then
+			print('|cffFF0000CACHED RESULT:|r Item is marked as not openable')
+			return
+		end
+	end
+
+	print('|cffFFFFFF--- Analysis Process ------|r')
+
+	-- Quick type check
+	local Consumable = itemType == 'Consumable' or itemSubType == 'Consumables'
+	if Consumable and itemSubType and string.find(itemSubType, 'Curio') and addon.DB.FilterCurios then
+		print('|cff00FF00MATCH:|r Curio item (FilterCurios enabled)')
+		return
+	else
+		print('|cffFFFFFF SKIP:|r Not a Curio or FilterCurios disabled')
+	end
+
+	-- Tooltip analysis
+	print('|cffFFFFFF--- Tooltip Analysis ------|r')
+	Tooltip:ClearLines()
+	Tooltip:SetOwner(UIParent, 'ANCHOR_NONE')
+	Tooltip:SetHyperlink(itemLink)
+
+	local numLines = Tooltip:NumLines()
+	print(string.format('Tooltip has %d lines', numLines))
+
+	local foundMatch = false
+	local suggestedFilters = {}
+	for i = 1, numLines do
+		local leftLine = _G['BagOpenableTooltipTextLeft' .. i]
+		local rightLine = _G['BagOpenableTooltipTextRight' .. i]
+
+		if leftLine then
+			local LineText = leftLine:GetText()
+			if LineText then
+				print(string.format('  Line %d (Left): %s', i, LineText))
+
+				-- Check SearchItems
+				for _, searchText in pairs(SearchItems) do
+					if string.find(LineText, searchText) then
+						print(string.format('|cff00FF00MATCH:|r Found search text: "%s"', searchText))
+						foundMatch = true
+					end
+				end
+
+				-- Check containers
+				if
+					(string.find(LineText, 'Weekly cache') or string.find(LineText, 'Cache of') or string.find(LineText, 'Right [Cc]lick to open') or string.find(LineText, '<Right [Cc]lick to [Oo]pen>') or
+						string.find(LineText, 'Contains'))
+				 then
+					if addon.DB.FilterContainers then
+						print('|cff00FF00MATCH:|r Container text (FilterContainers enabled)')
+						foundMatch = true
+					else
+						print('|cffFFAA00POTENTIAL:|r Container text found, but FilterContainers is disabled')
+						suggestedFilters.FilterContainers = true
+					end
+				end
+
+				-- Check appearance
+				if (string.find(LineText, ITEM_COSMETIC_LEARN) or string.find(LineText, GetLocaleString('Use: Collect the appearance'))) then
+					if addon.DB.FilterAppearance then
+						print('|cff00FF00MATCH:|r Appearance item (FilterAppearance enabled)')
+						foundMatch = true
+					else
+						print('|cffFFAA00POTENTIAL:|r Appearance item found, but FilterAppearance is disabled')
+						suggestedFilters.FilterAppearance = true
+					end
+				end
+
+				-- Check creatable items
+				local CreateItemString = ITEM_CREATE_LOOT_SPEC_ITEM:gsub(' %(%%s%)%.', '')
+				if (string.find(LineText, CreateItemString) or string.find(LineText, 'Create a soulbound item for your class') or string.find(LineText, 'item appropriate for your class')) then
+					if addon.DB.CreatableItem then
+						print('|cff00FF00MATCH:|r Creatable item (CreatableItem enabled)')
+						foundMatch = true
+					else
+						print('|cffFFAA00POTENTIAL:|r Creatable item found, but CreatableItem is disabled')
+						suggestedFilters.CreatableItem = true
+					end
+				end
+
+				-- Check locked items
+				if LineText == LOCKED then
+					print('|cff00FF00MATCH:|r Locked item')
+					foundMatch = true
+				end
+
+				-- Check toys
+				if string.find(LineText, ITEM_TOY_ONUSE) then
+					if addon.DB.FilterToys then
+						print('|cff00FF00MATCH:|r Toy item (FilterToys enabled)')
+						foundMatch = true
+					else
+						print('|cffFFAA00POTENTIAL:|r Toy item found, but FilterToys is disabled')
+						suggestedFilters.FilterToys = true
+					end
+				end
+
+				-- Check companions
+				if string.find(LineText, 'companion') then
+					if addon.DB.FilterCompanion then
+						print('|cff00FF00MATCH:|r Companion item (FilterCompanion enabled)')
+						foundMatch = true
+					else
+						print('|cffFFAA00POTENTIAL:|r Companion item found, but FilterCompanion is disabled')
+						suggestedFilters.FilterCompanion = true
+					end
+				end
+
+				-- Check knowledge
+				if (string.find(LineText, 'Knowledge') and string.find(LineText, 'Study to increase')) then
+					if addon.DB.FilterKnowledge then
+						print('|cff00FF00MATCH:|r Knowledge item (FilterKnowledge enabled)')
+						foundMatch = true
+					else
+						print('|cffFFAA00POTENTIAL:|r Knowledge item found, but FilterKnowledge is disabled')
+						suggestedFilters.FilterKnowledge = true
+					end
+				end
+
+				-- Check reputation
+				if
+					(string.find(LineText, REP_USE_TEXT) or string.find(LineText, GetLocaleString('reputation towards')) or string.find(LineText, GetLocaleString('reputation with'))) and
+						string.find(LineText, ITEM_SPELL_TRIGGER_ONUSE)
+				 then
+					if addon.DB.FilterRepGain then
+						print('|cff00FF00MATCH:|r Reputation item (FilterRepGain enabled)')
+						foundMatch = true
+					else
+						print('|cffFFAA00POTENTIAL:|r Reputation item found, but FilterRepGain is disabled')
+						suggestedFilters.FilterRepGain = true
+					end
+				end
+
+				-- Check mounts
+				if (string.find(LineText, GetLocaleString('Use: Teaches you how to summon this mount')) or string.find(LineText, 'Drakewatcher Manuscript')) then
+					if addon.DB.FilterMounts then
+						print('|cff00FF00MATCH:|r Mount item (FilterMounts enabled)')
+						foundMatch = true
+					else
+						print('|cffFFAA00POTENTIAL:|r Mount item found, but FilterMounts is disabled')
+						suggestedFilters.FilterMounts = true
+					end
+				end
+
+				-- Check generic use
+				if string.find(LineText, ITEM_SPELL_TRIGGER_ONUSE) then
+					if addon.DB.FilterGenericUse then
+						print('|cff00FF00MATCH:|r Generic use item (FilterGenericUse enabled)')
+						foundMatch = true
+					else
+						print('|cffFFAA00POTENTIAL:|r Generic use item found, but FilterGenericUse is disabled')
+						suggestedFilters.FilterGenericUse = true
+					end
+				end
+			end
+		end
+
+		if rightLine then
+			local RightLineText = rightLine:GetText()
+			if RightLineText then
+				print(string.format('  Line %d (Right): %s', i, RightLineText))
+
+				-- Check SearchItems on right side
+				for _, searchText in pairs(SearchItems) do
+					if string.find(RightLineText, searchText) then
+						print(string.format('|cff00FF00MATCH:|r Found search text on right: "%s"', searchText))
+						foundMatch = true
+					end
+				end
+
+				-- Check containers on right side
+				if (string.find(RightLineText, 'Right [Cc]lick to open') or string.find(RightLineText, '<Right [Cc]lick to [Oo]pen>')) then
+					if addon.DB.FilterContainers then
+						print('|cff00FF00MATCH:|r Container text on right (FilterContainers enabled)')
+						foundMatch = true
+					else
+						print('|cffFFAA00POTENTIAL:|r Container text found on right, but FilterContainers is disabled')
+						suggestedFilters.FilterContainers = true
+					end
+				end
+			end
+		end
+	end
+
+	Tooltip:Hide()
+
+	-- Show filter settings
+	print('|cffFFFFFF--- Filter Settings ------|r')
+	print(string.format('FilterContainers: %s', addon.DB.FilterContainers and 'Enabled' or 'Disabled'))
+	print(string.format('FilterAppearance: %s', addon.DB.FilterAppearance and 'Enabled' or 'Disabled'))
+	print(string.format('FilterToys: %s', addon.DB.FilterToys and 'Enabled' or 'Disabled'))
+	print(string.format('FilterMounts: %s', addon.DB.FilterMounts and 'Enabled' or 'Disabled'))
+	print(string.format('FilterRepGain: %s', addon.DB.FilterRepGain and 'Enabled' or 'Disabled'))
+	print(string.format('FilterCompanion: %s', addon.DB.FilterCompanion and 'Enabled' or 'Disabled'))
+	print(string.format('FilterCurios: %s', addon.DB.FilterCurios and 'Enabled' or 'Disabled'))
+	print(string.format('FilterKnowledge: %s', addon.DB.FilterKnowledge and 'Enabled' or 'Disabled'))
+	print(string.format('FilterGenericUse: %s', addon.DB.FilterGenericUse and 'Enabled' or 'Disabled'))
+	print(string.format('CreatableItem: %s', addon.DB.CreatableItem and 'Enabled' or 'Disabled'))
+
+	-- Show suggestions
+	if next(suggestedFilters) then
+		print('|cffFFFFFF--- Suggestions ------|r')
+		print('|cffFFAA00To make this item openable, try enabling these filters:|r')
+		for filterName, _ in pairs(suggestedFilters) do
+			print('  • ' .. filterName)
+		end
+	end
+
+	-- Final result
+	print('|cffFFFFFF--- Final Result ------|r')
+	if foundMatch then
+		print('|cff00FF00RESULT:|r Item should be highlighted as openable')
+	else
+		if next(suggestedFilters) then
+			print('|cffFFAA00RESULT:|r Item would be openable if suggested filters were enabled')
+		else
+			print('|cffFF0000RESULT:|r Item should NOT be highlighted (no matching criteria)')
+		end
+	end
+end
+
+---Helper function to parse item input (accepts item ID, item link, or item name)
+---@param input string|number The input to parse (item ID, link, or name)
+---@return number|nil itemID The parsed item ID, or nil if invalid
+---@return string|nil itemName The item name, or nil if not found
+function addon:ParseItemInput(input)
+	if not input or input == '' then
+		return nil, nil
+	end
+
+	-- Try to parse as item ID (number)
+	local itemID = tonumber(input)
+	if itemID then
+		local itemName = C_Item.GetItemNameByID(itemID)
+		if itemName then
+			return itemID, itemName
+		else
+			-- Item ID exists but not loaded yet - queue it and return
+			C_Item.RequestLoadItemDataByID(itemID)
+			return itemID, 'Loading...'
+		end
+	end
+
+	-- Try to parse as item link
+	local linkItemID = tonumber(string.match(input, 'item:(%d+)'))
+	if linkItemID then
+		local itemName = C_Item.GetItemNameByID(linkItemID)
+		if itemName then
+			return linkItemID, itemName
+		else
+			C_Item.RequestLoadItemDataByID(linkItemID)
+			return linkItemID, 'Loading...'
+		end
+	end
+
+	-- Try to lookup by item name (less reliable)
+	-- This searches for exact match in cache
+	local searchName = string.lower(input)
+	for cachedItemID, _ in pairs(addon.GlobalDB.itemCache.openable) do
+		local cachedName = C_Item.GetItemNameByID(cachedItemID)
+		if cachedName and string.lower(cachedName) == searchName then
+			return cachedItemID, cachedName
+		end
+	end
+
+	-- Could not parse - return nil
+	return nil, nil
+end
+
 -- Export the item checking function
 root.CheckItem = CheckItem
 
@@ -300,7 +626,7 @@ end
 
 function addon:OnInitialize()
 	-- Initialize SpartanUI Logger first
-	InitializeSUILogger()
+	InitializeLibATLogger()
 
 	Log('LibsIH core initializing...')
 	if logger then
@@ -321,6 +647,14 @@ function addon:OnInitialize()
 	self.DB = self.DataBase.profile
 	self.GlobalDB = self.DataBase.global
 	Log('Database initialized with ShowGlow: ' .. tostring(self.DB.ShowGlow) .. ', ShowIndicator: ' .. tostring(self.DB.ShowIndicator))
+
+	-- Initialize Libs-AddonTools ProfileManager integration
+	if LibsAddonTools and LibsAddonTools.ProfileManager and LibsAddonTools.ProfileManager.IsProfileManagerAvailable() then
+		self.ProfileManager = LibsAddonTools.ProfileManager.RegisterAddon("Lib's - Item Highlighter", self.DataBase)
+		Log('ProfileManager integration enabled - profile export/import available')
+	else
+		Log('LibsAddonTools not available - profile features disabled', 'info')
+	end
 
 	-- Setup options panel
 	self:SetupOptions()
