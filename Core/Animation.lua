@@ -57,6 +57,20 @@ end
 -- Start global timer if not running
 local function StartGlobalTimer()
 	if not globalAnimationTimer then
+		-- Before starting, clean up any frames that might be in inconsistent state
+		-- This prevents frozen animations when bags are rapidly opened/closed
+		for frame in pairs(animatingFrames) do
+			if frame.pauseTimer then
+				addon:CancelTimer(frame.pauseTimer)
+				frame.pauseTimer = nil
+				Log('Canceled orphaned pause timer on animation restart', 'debug')
+			end
+			-- Reset to initial state to ensure clean animation
+			if frame.animationState then
+				frame.animationState = 1 -- Reset to blue visible state
+			end
+		end
+
 		globalAnimationTimer = addon:ScheduleRepeatingTimer(GlobalAnimationUpdate, addon.DB.AnimationUpdateInterval)
 		local count = 0
 		for _ in pairs(animatingFrames) do
@@ -71,6 +85,15 @@ local function StopGlobalTimer()
 	if globalAnimationTimer then
 		addon:CancelTimer(globalAnimationTimer)
 		globalAnimationTimer = nil
+
+		-- Clean up any orphaned pause timers when stopping
+		for frame in pairs(animatingFrames) do
+			if frame.pauseTimer then
+				addon:CancelTimer(frame.pauseTimer)
+				frame.pauseTimer = nil
+			end
+		end
+
 		Log('Stopped global animation timer')
 	end
 end
