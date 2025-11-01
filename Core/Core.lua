@@ -161,6 +161,12 @@ local function CheckItem(itemDetails)
 
 	-- Quick check for common openable item types
 	local itemName, _, _, _, _, itemType, itemSubType = C_Item.GetItemInfo(itemLink)
+
+	-- Exclude all armor and weapon types from classification to prevent false positives
+	-- (e.g., items with "companion" in flavor text like Fangs of Ashamane)
+	if itemType == 'Weapon' or itemType == 'Armor' then
+		return CacheOpenableResult(itemID, false)
+	end
 	local Consumable = itemType == 'Consumable' or itemSubType == 'Consumables'
 
 	if addon.DB.FilterDelversBounty and itemName and string.find(itemName, 'Delver') and string.find(itemName, 'Bounty') then
