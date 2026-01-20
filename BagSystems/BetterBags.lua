@@ -7,6 +7,10 @@ local BetterBagsIntegration = {
 	name = 'BetterBags'
 }
 
+-- Module references for BetterBags integration
+local categoriesModule = nil
+local configModule = nil
+
 -- Check if BetterBags is available
 function BetterBagsIntegration:IsAvailable()
 	Log('BetterBags IsAvailable check starting', 'info')
@@ -46,6 +50,23 @@ function BetterBagsIntegration:IsAvailable()
 		Log('BetterBags ItemFrame module test: ' .. tostring(moduleSuccess), 'info')
 
 		if moduleSuccess and itemFrame then
+			-- Also get Categories and Config modules for category system
+			local catSuccess, categories = pcall(function()
+				return betterBagsAddon:GetModule('Categories')
+			end)
+			if catSuccess and categories then
+				categoriesModule = categories
+				Log('BetterBags Categories module found', 'info')
+			end
+
+			local configSuccess, config = pcall(function()
+				return betterBagsAddon:GetModule('Config')
+			end)
+			if configSuccess and config then
+				configModule = config
+				Log('BetterBags Config module found', 'info')
+			end
+
 			Log('BetterBags is available and ready for integration', 'info')
 			return true
 		else
@@ -95,6 +116,50 @@ end
 
 -- Store item button widgets that we've created
 local itemButtonWidgets = {}
+
+-- Helper function to generate category color prefix
+local function GetCategoryPrefix()
+	if not addon.DB or not addon.DB.BetterBags_CategoryColor then
+		return '|cff2beefd'  -- Default cyan
+	end
+	local color = addon.DB.BetterBags_CategoryColor
+	local r = math.floor(color.r * 255 + 0.5)
+	local g = math.floor(color.g * 255 + 0.5)
+	local b = math.floor(color.b * 255 + 0.5)
+	return string.format('|cff%02x%02x%02x', r, g, b)
+end
+
+-- Category filter function for BetterBags integration
+---@param data ItemData BetterBags item data
+---@return string|nil categoryName The category name or nil
+local function BetterBagsCategoryFilter(data)
+	-- Check if category system is enabled
+	if not addon.DB or not addon.DB.BetterBags_EnableCategories then
+		return nil
+	end
+
+	-- Get item link
+	local itemLink = C_Container.GetContainerItemLink(data.bagid, data.slotid)
+	if not itemLink then
+		return nil
+	end
+
+	-- Convert to our format
+	local itemDetails = {
+		itemLink = itemLink,
+		bagID = data.bagid,
+		slotID = data.slotid
+	}
+
+	-- Get category from enhanced CheckItem function
+	local categoryType = root.CheckItemWithCategory(itemDetails)
+
+	if categoryType then
+		return GetCategoryPrefix() .. categoryType
+	end
+
+	return nil
+end
 
 -- Function to create our highlight widget on an item button
 local function CreateHighlightWidget(itemButton)
@@ -246,6 +311,29 @@ function BetterBagsIntegration:OnEnable()
 	end
 
 	Log('BetterBags integration enabled')
+
+	-- Register category function if modules are available
+	if categoriesModule and addon.DB.BetterBags_EnableCategories then
+		categoriesModule:RegisterCategoryFunction('libs-itemhighlighter', BetterBagsCategoryFilter)
+		Log('Registered BetterBags category function', 'info')
+	end
+
+	-- Register plugin config if available
+	if configModule then
+		local pluginOptions = {
+			name = "Lib's Item Highlighter",
+			type = 'group',
+			args = {
+				description = {
+					type = 'description',
+					name = 'Category system is configured in the main Item Highlighter options (/libsih).\n\nYou can enable/disable the category system and customize category colors there.',
+					order = 1
+				}
+			}
+		}
+		configModule:AddPluginConfig("Lib's Item Highlighter", pluginOptions)
+		Log('Registered BetterBags plugin config', 'info')
+	end
 
 	-- Set up hooks for item button updates
 	HookBetterBagsItemButtons()

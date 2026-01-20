@@ -257,6 +257,52 @@ local function GetOptions()
 				end,
 				order = 6
 			},
+			betterBagsHeader = {
+				type = 'header',
+				name = 'BetterBags Integration',
+				order = 7
+			},
+			betterBagsEnableCategories = {
+				type = 'toggle',
+				name = 'Enable BetterBags Categories',
+				desc = 'Creates named categories in BetterBags for openable items (Openable, Toys, Mounts, etc.). Reload UI to see changes.',
+				order = 8,
+				get = function()
+					return addon.DB.BetterBags_EnableCategories
+				end,
+				set = function(_, value)
+					addon.DB.BetterBags_EnableCategories = value
+					-- Refresh the bag system to apply changes
+					addon:OnDisable()
+					addon:OnEnable()
+				end,
+				disabled = function()
+					-- Only available when BetterBags is detected
+					return addon.BagSystems['betterbags'] == nil or not addon.BagSystems['betterbags']:IsAvailable()
+				end
+			},
+			betterBagsCategoryColor = {
+				type = 'color',
+				name = 'Category Name Color',
+				desc = 'Color for BetterBags category names. Reload UI to see changes.',
+				hasAlpha = false,
+				order = 9,
+				get = function()
+					local color = addon.DB.BetterBags_CategoryColor
+					return color.r, color.g, color.b
+				end,
+				set = function(_, r, g, b)
+					addon.DB.BetterBags_CategoryColor = {r = r, g = g, b = b}
+				end,
+				disabled = function()
+					return not addon.DB.BetterBags_EnableCategories or addon.BagSystems['betterbags'] == nil or not addon.BagSystems['betterbags']:IsAvailable()
+				end
+			},
+			betterBagsNote = {
+				type = 'description',
+				name = 'Note: The item type filters below affect both visual highlighting AND BetterBags categories.',
+				order = 9.5
+			},
 			showGlow = {
 				type = 'toggle',
 				name = 'Show Glow Animation',
@@ -357,6 +403,12 @@ local function GetOptions()
 						desc = "Highlight containers with 'Right click to open' text (caches, chests, etc.)",
 						order = 16
 					},
+					FilterLockboxes = {
+						type = 'toggle',
+						name = 'Lockboxes',
+						desc = 'Highlight locked items that require keys to open',
+						order = 16.5
+					},
 					FilterKnowledge = {
 						type = 'toggle',
 						name = 'Knowledge Items',
@@ -376,6 +428,51 @@ local function GetOptions()
 						order = 19
 					}
 				}
+			},
+			statisticsHeader = {
+				type = 'header',
+				name = 'Item Statistics',
+				order = 35
+			},
+			statisticsDescription = {
+				type = 'description',
+				name = 'View counts of openable items in your bags by category.',
+				order = 36
+			},
+			viewStatistics = {
+				type = 'execute',
+				name = 'View Statistics',
+				desc = 'Scan your bags and display item counts by category',
+				func = function()
+					local stats = root.GetItemStatistics()
+
+					-- Build formatted output
+					local output = "|cff2beefdLib's - Item Highlighter: Item Statistics|r\n\n"
+					local totalCount = 0
+
+					-- Sort categories alphabetically for consistent display
+					local categories = {}
+					for category, count in pairs(stats) do
+						if count > 0 then
+							table.insert(categories, {name = category, count = count})
+							totalCount = totalCount + count
+						end
+					end
+
+					table.sort(categories, function(a, b) return a.name < b.name end)
+
+					if totalCount == 0 then
+						output = output .. "|cffFFAA00No openable items found in your bags.|r"
+					else
+						for _, data in ipairs(categories) do
+							output = output .. string.format("|cffFFFFFF%s:|r %d\n", data.name, data.count)
+						end
+						output = output .. string.format("\n|cff00FF00Total:|r %d items", totalCount)
+					end
+
+					print(output)
+				end,
+				order = 37
 			},
 			cacheHeader = {
 				type = 'header',
@@ -657,6 +754,35 @@ function addon:SetupOptions()
 			else
 				print("Lib's - Item Highlighter: ProfileManager not available (LibsAddonTools required)")
 			end
+		elseif msg == 'stats' or msg == 'statistics' then
+			-- Display item statistics
+			local stats = root.GetItemStatistics()
+
+			-- Build formatted output
+			local output = "|cff2beefdLib's - Item Highlighter: Item Statistics|r\n\n"
+			local totalCount = 0
+
+			-- Sort categories alphabetically for consistent display
+			local categories = {}
+			for category, count in pairs(stats) do
+				if count > 0 then
+					table.insert(categories, {name = category, count = count})
+					totalCount = totalCount + count
+				end
+			end
+
+			table.sort(categories, function(a, b) return a.name < b.name end)
+
+			if totalCount == 0 then
+				output = output .. "|cffFFAA00No openable items found in your bags.|r"
+			else
+				for _, data in ipairs(categories) do
+					output = output .. string.format("|cffFFFFFF%s:|r %d\n", data.name, data.count)
+				end
+				output = output .. string.format("\n|cff00FF00Total:|r %d items", totalCount)
+			end
+
+			print(output)
 		else
 			Settings.OpenToCategory("Lib's - Item Highlighter")
 		end

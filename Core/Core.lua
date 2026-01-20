@@ -20,6 +20,7 @@ local profile = {
 	FilterDelversBounty = true,
 	FilterKnowledge = true,
 	FilterContainers = true,
+	FilterLockboxes = true,
 	CreatableItem = true,
 	ShowGlow = true,
 	ShowIndicator = true,
@@ -27,6 +28,9 @@ local profile = {
 	TimeBetweenCycles = 0.10,
 	AnimationUpdateInterval = 0.1,
 	BagSystem = 'auto',
+	-- BetterBags integration
+	BetterBags_EnableCategories = true,
+	BetterBags_CategoryColor = {r = 0.17, g = 0.93, b = 0.93}, -- Cyan default
 	-- Custom whitelist/blacklist
 	customWhitelist = {}, -- [itemID] = itemName
 	customBlacklist = {}, -- [itemID] = itemName
@@ -225,7 +229,7 @@ local function CheckItem(itemDetails)
 					return CacheOpenableResult(itemID, true)
 				end
 
-				if LineText == LOCKED then
+				if LineText == LOCKED and addon.DB.FilterLockboxes then
 					return CacheOpenableResult(itemID, true)
 				end
 
@@ -392,8 +396,13 @@ function addon:DebugItemOpenability(itemID)
 
 				-- Check locked items
 				if LineText == LOCKED then
-					print('|cff00FF00MATCH:|r Locked item')
-					foundMatch = true
+					if addon.DB.FilterLockboxes then
+						print('|cff00FF00MATCH:|r Locked item (FilterLockboxes enabled)')
+						foundMatch = true
+					else
+						print('|cffFFAA00POTENTIAL:|r Locked item found, but FilterLockboxes is disabled')
+						suggestedFilters.FilterLockboxes = true
+					end
 				end
 
 				-- Check toys
@@ -506,6 +515,7 @@ function addon:DebugItemOpenability(itemID)
 	print(string.format('FilterCompanion: %s', addon.DB.FilterCompanion and 'Enabled' or 'Disabled'))
 	print(string.format('FilterCurios: %s', addon.DB.FilterCurios and 'Enabled' or 'Disabled'))
 	print(string.format('FilterKnowledge: %s', addon.DB.FilterKnowledge and 'Enabled' or 'Disabled'))
+	print(string.format('FilterLockboxes: %s', addon.DB.FilterLockboxes and 'Enabled' or 'Disabled'))
 	print(string.format('FilterGenericUse: %s', addon.DB.FilterGenericUse and 'Enabled' or 'Disabled'))
 	print(string.format('CreatableItem: %s', addon.DB.CreatableItem and 'Enabled' or 'Disabled'))
 
@@ -579,8 +589,217 @@ function addon:ParseItemInput(input)
 	return nil, nil
 end
 
--- Export the item checking function
+-- New function: Returns category string for BetterBags integration
+---@param itemDetails table Item details with itemLink, bagID, slotID
+---@return string|nil categoryName The category name or nil if not openable
+local function CheckItemWithCategory(itemDetails)
+	if not itemDetails or not itemDetails.itemLink then
+		return nil
+	end
+
+	local itemLink = itemDetails.itemLink
+	local bagID, slotID = itemDetails.bagID, itemDetails.slotID
+	local itemID = C_Item.GetItemInfoInstant(itemLink)
+
+	-- Check custom whitelist/blacklist FIRST
+	if itemID and addon.DB then
+		if addon.DB.customWhitelist[itemID] then
+			return "Whitelist Items"
+		end
+		if addon.DB.customBlacklist[itemID] then
+			return nil
+		end
+	end
+
+	-- Quick check for common openable item types
+	local itemName, _, _, _, _, itemType, itemSubType = C_Item.GetItemInfo(itemLink)
+
+	-- Exclude armor/weapons
+	if itemType == 'Weapon' or itemType == 'Armor' then
+		return nil
+	end
+
+	local Consumable = itemType == 'Consumable' or itemSubType == 'Consumables'
+
+	-- Quick checks
+	if addon.DB.FilterDelversBounty and itemName and string.find(itemName, 'Delver') and string.find(itemName, 'Bounty') then
+		return "Delver's Bounty"
+	end
+
+	if Consumable and itemSubType and string.find(itemSubType, 'Curio') and addon.DB.FilterCurios then
+		return "Curios"
+	end
+
+	-- Tooltip scanning
+	Tooltip:ClearLines()
+	Tooltip:SetOwner(UIParent, 'ANCHOR_NONE')
+	if bagID and slotID then
+		Tooltip:SetBagItem(bagID, slotID)
+	else
+		Tooltip:SetHyperlink(itemLink)
+	end
+
+	for i = 1, Tooltip:NumLines() do
+		local leftLine = _G['BagOpenableTooltipTextLeft' .. i]
+		if leftLine then
+			local LineText = leftLine:GetText()
+			if LineText then
+				-- Check each category in priority order
+
+				-- Basic openable items (highest priority)
+				for _, v in pairs(SearchItems) do
+					if string.find(LineText, v) then
+						return "Openable"
+					end
+				end
+
+				-- Lockboxes
+				if LineText == LOCKED and addon.DB.FilterLockboxes then
+					return "Lockboxes"
+				end
+
+				-- Cosmetics/Appearance
+				if addon.DB.FilterAppearance and (string.find(LineText, ITEM_COSMETIC_LEARN) or string.find(LineText, GetLocaleString('Use: Collect the appearance'))) then
+					return "Cosmetics"
+				end
+
+				-- Creatable Items
+				local CreateItemString = ITEM_CREATE_LOOT_SPEC_ITEM:gsub(' %(%%s%)%.', '')
+				if addon.DB.CreatableItem and (string.find(LineText, CreateItemString) or string.find(LineText, 'Create a soulbound item for your class') or string.find(LineText, 'item appropriate for your class')) then
+					return "Creatable Items"
+				end
+
+				-- Toys
+				if addon.DB.FilterToys and string.find(LineText, ITEM_TOY_ONUSE) then
+					return "Toys"
+				end
+
+				-- Pets/Companions
+				if addon.DB.FilterCompanion and string.find(LineText, 'companion') then
+					return "Pets"
+				end
+
+				-- Knowledge
+				if addon.DB.FilterKnowledge and (string.find(LineText, 'Knowledge') and string.find(LineText, 'Study to increase')) then
+					return "Knowledge"
+				end
+
+				-- Reputation
+				if addon.DB.FilterRepGain and (string.find(LineText, REP_USE_TEXT) or string.find(LineText, GetLocaleString('reputation towards')) or string.find(LineText, GetLocaleString('reputation with'))) and string.find(LineText, ITEM_SPELL_TRIGGER_ONUSE) then
+					return "Reputation"
+				end
+
+				-- Mounts
+				if addon.DB.FilterMounts and (string.find(LineText, GetLocaleString('Use: Teaches you how to summon this mount')) or string.find(LineText, 'Drakewatcher Manuscript')) then
+					return "Mounts"
+				end
+
+				-- Containers (caches, etc.)
+				if addon.DB.FilterContainers and (string.find(LineText, 'Weekly cache') or string.find(LineText, 'Cache of') or string.find(LineText, 'Contains')) then
+					return "Containers"
+				end
+
+				-- Generic Use (checked last)
+				if addon.DB.FilterGenericUse and string.find(LineText, ITEM_SPELL_TRIGGER_ONUSE) then
+					return "Generic Use Items"
+				end
+			end
+		end
+
+		-- Check right side text too
+		local rightLine = _G['BagOpenableTooltipTextRight' .. i]
+		if rightLine then
+			local RightLineText = rightLine:GetText()
+			if RightLineText then
+				-- Basic openable items
+				for _, v in pairs(SearchItems) do
+					if string.find(RightLineText, v) then
+						return "Openable"
+					end
+				end
+
+				-- Containers
+				if addon.DB.FilterContainers and (string.find(RightLineText, 'Right [Cc]lick to open') or string.find(RightLineText, '<Right [Cc]lick to [Oo]pen>')) then
+					return "Containers"
+				end
+			end
+		end
+	end
+
+	return nil
+end
+
+-- Function to scan all bags and count items by category
+---@return table statistics Table with category names as keys and counts as values
+local function GetItemStatistics()
+	local stats = {
+		['Openable'] = 0,
+		['Lockboxes'] = 0,
+		['Cosmetics'] = 0,
+		['Toys'] = 0,
+		['Mounts'] = 0,
+		['Pets'] = 0,
+		['Knowledge'] = 0,
+		['Curios'] = 0,
+		['Creatable Items'] = 0,
+		['Reputation'] = 0,
+		['Containers'] = 0,
+		['Generic Use Items'] = 0,
+		["Delver's Bounty"] = 0,
+		['Whitelist Items'] = 0
+	}
+
+	-- Scan all bag slots
+	for bagID = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
+		local numSlots = C_Container.GetContainerNumSlots(bagID)
+		if numSlots then
+			for slotID = 1, numSlots do
+				local itemLink = C_Container.GetContainerItemLink(bagID, slotID)
+				if itemLink then
+					local itemDetails = {
+						itemLink = itemLink,
+						bagID = bagID,
+						slotID = slotID
+					}
+					local category = CheckItemWithCategory(itemDetails)
+					if category and stats[category] then
+						stats[category] = stats[category] + 1
+					end
+				end
+			end
+		end
+	end
+
+	-- Scan bank if it's open
+	if addon.DB and addon.DB.scanBank then
+		for bagID = NUM_BAG_SLOTS + 1, NUM_BAG_SLOTS + NUM_BANKBAGSLOTS do
+			local numSlots = C_Container.GetContainerNumSlots(bagID)
+			if numSlots then
+				for slotID = 1, numSlots do
+					local itemLink = C_Container.GetContainerItemLink(bagID, slotID)
+					if itemLink then
+						local itemDetails = {
+							itemLink = itemLink,
+							bagID = bagID,
+							slotID = slotID
+						}
+						local category = CheckItemWithCategory(itemDetails)
+						if category and stats[category] then
+							stats[category] = stats[category] + 1
+						end
+					end
+				end
+			end
+		end
+	end
+
+	return stats
+end
+
+-- Export the item checking functions
 root.CheckItem = CheckItem
+root.CheckItemWithCategory = CheckItemWithCategory
+root.GetItemStatistics = GetItemStatistics
 
 -- Bag system registry
 local bagSystems = {}
