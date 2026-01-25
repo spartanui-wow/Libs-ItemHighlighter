@@ -122,13 +122,9 @@ local function AnimateTextures(frame)
 		frame.animationState = nextState
 
 		-- Start pause timer (individual timer for pauses)
-		frame.pauseTimer =
-			addon:ScheduleTimer(
-			function()
-				AnimateTextures(frame) -- Restart animation for next phase
-			end,
-			addon.DB.TimeBetweenCycles
-		)
+		frame.pauseTimer = addon:ScheduleTimer(function()
+			AnimateTextures(frame) -- Restart animation for next phase
+		end, addon.DB.TimeBetweenCycles)
 
 		Log('Started pause timer for ' .. addon.DB.TimeBetweenCycles .. ' seconds, next state: ' .. nextState, 'debug')
 	end
@@ -242,7 +238,7 @@ local function CreateIndicatorFrame(parent)
 	globalWidgetRegistry[parent] = {
 		widgetFrame = frame,
 		bagSystem = 'unknown', -- Will be updated by caller
-		itemKey = nil -- Will be updated by caller
+		itemKey = nil, -- Will be updated by caller
 	}
 
 	-- Get parent size and use it for perfect alignment
@@ -314,8 +310,12 @@ local function UpdateIndicatorFrame(frame, itemDetails)
 		if addon.DB.ShowGlow then
 			Log('Showing glow animation', 'debug')
 			-- Show glow textures
-			if frame.texture1 then frame.texture1:Show() end
-			if frame.texture2 then frame.texture2:Show() end
+			if frame.texture1 then
+				frame.texture1:Show()
+			end
+			if frame.texture2 then
+				frame.texture2:Show()
+			end
 
 			-- Ensure animation is running for glow effect
 			if not animatingFrames[frame] then
@@ -336,8 +336,12 @@ local function UpdateIndicatorFrame(frame, itemDetails)
 			end
 		else
 			-- Hide glow textures if glow is disabled
-			if frame.texture1 then frame.texture1:Hide() end
-			if frame.texture2 then frame.texture2:Hide() end
+			if frame.texture1 then
+				frame.texture1:Hide()
+			end
+			if frame.texture2 then
+				frame.texture2:Hide()
+			end
 			CleanupAnimation(frame)
 		end
 
@@ -363,7 +367,6 @@ local function UpdateIndicatorFrame(frame, itemDetails)
 	return false
 end
 
-
 -- Cleanup all widgets (used when disabling addon)
 local function CleanupAllWidgets()
 	local count = 0
@@ -385,5 +388,5 @@ root.Animation = {
 	CleanupAnimation = CleanupAnimation,
 	CleanupAllWidgets = CleanupAllWidgets,
 	StartGlobalTimer = StartGlobalTimer,
-	StopGlobalTimer = StopGlobalTimer
+	StopGlobalTimer = StopGlobalTimer,
 }

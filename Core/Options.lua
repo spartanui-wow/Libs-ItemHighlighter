@@ -43,7 +43,7 @@ local function buildItemList(listName, displayName, optionTable)
 	local filteredItems = {}
 	for itemID, itemName in pairs(dataSource) do
 		if searchTerm == '' or string.find(string.lower(itemName), searchTerm, 1, true) then
-			table.insert(filteredItems, {id = itemID, name = itemName})
+			table.insert(filteredItems, { id = itemID, name = itemName })
 		end
 	end
 
@@ -69,7 +69,7 @@ local function buildItemList(listName, displayName, optionTable)
 			inline = true,
 			name = 'Items',
 			order = 3,
-			args = {}
+			args = {},
 		}
 	end
 	optionTable.args.list.args = {}
@@ -81,7 +81,7 @@ local function buildItemList(listName, displayName, optionTable)
 		type = 'description',
 		name = string.format('Page %d of %d (%d items)', currentPage, totalPages, totalItems),
 		order = 1,
-		fontSize = 'medium'
+		fontSize = 'medium',
 	}
 
 	-- Add search box
@@ -98,7 +98,7 @@ local function buildItemList(listName, displayName, optionTable)
 			addon.DB[searchField] = value
 			addon.DB[pageField] = 1 -- Reset to page 1 on search
 			buildItemList(listName, displayName, optionTable)
-		end
+		end,
 	}
 
 	-- Add pagination controls
@@ -111,7 +111,7 @@ local function buildItemList(listName, displayName, optionTable)
 		func = function()
 			addon.DB[pageField] = currentPage - 1
 			buildItemList(listName, displayName, optionTable)
-		end
+		end,
 	}
 
 	listOpts.nextPage = {
@@ -123,14 +123,14 @@ local function buildItemList(listName, displayName, optionTable)
 		func = function()
 			addon.DB[pageField] = currentPage + 1
 			buildItemList(listName, displayName, optionTable)
-		end
+		end,
 	}
 
 	-- Add separator
 	listOpts.separator = {
 		type = 'header',
 		name = '',
-		order = 5
+		order = 5,
 	}
 
 	-- Add items for current page
@@ -138,7 +138,7 @@ local function buildItemList(listName, displayName, optionTable)
 		listOpts.empty = {
 			type = 'description',
 			name = '|cffFFAA00No items in ' .. string.lower(displayName) .. '|r',
-			order = 10
+			order = 10,
 		}
 	else
 		for i = startIdx, endIdx do
@@ -157,7 +157,7 @@ local function buildItemList(listName, displayName, optionTable)
 				name = displayText,
 				width = 'double',
 				order = count * 3 + 10,
-				fontSize = 'medium'
+				fontSize = 'medium',
 			}
 
 			-- Delete button
@@ -175,7 +175,7 @@ local function buildItemList(listName, displayName, optionTable)
 					if bagSystem and bagSystem.RefreshAllCornerWidgets then
 						bagSystem.RefreshAllCornerWidgets()
 					end
-				end
+				end,
 			}
 
 			-- Move button
@@ -210,7 +210,7 @@ local function buildItemList(listName, displayName, optionTable)
 					if bagSystem and bagSystem.RefreshAllCornerWidgets then
 						bagSystem.RefreshAllCornerWidgets()
 					end
-				end
+				end,
 			}
 		end
 	end
@@ -228,320 +228,322 @@ local function GetOptions()
 				name = 'General',
 				order = 1,
 				args = {
-			bagSystemHeader = {
-				type = 'header',
-				name = 'General Settings',
-				order = 5
-			},
-			bagSystemSelect = {
-				type = 'select',
-				name = 'Bag System',
-				desc = 'Choose which bag addon to integrate with',
-				values = {
-					auto = 'Auto-detect',
-					baganator = 'Baganator',
-					bagnon = 'Bagnon',
-					betterbags = 'BetterBags',
-					elvui = 'ElvUI',
-					blizzard = 'Blizzard Default',
-					adibags = 'AdiBags'
-				},
-				get = function()
-					return addon.DB.BagSystem
-				end,
-				set = function(_, value)
-					addon.DB.BagSystem = value
-					-- Refresh the bag system
-					addon:OnDisable()
-					addon:OnEnable()
-				end,
-				order = 6
-			},
-			betterBagsHeader = {
-				type = 'header',
-				name = 'BetterBags Integration',
-				order = 7
-			},
-			betterBagsEnableCategories = {
-				type = 'toggle',
-				name = 'Enable BetterBags Categories',
-				desc = 'Creates named categories in BetterBags for openable items (Openable, Toys, Mounts, etc.). Reload UI to see changes.',
-				order = 8,
-				get = function()
-					return addon.DB.BetterBags_EnableCategories
-				end,
-				set = function(_, value)
-					addon.DB.BetterBags_EnableCategories = value
-					-- Refresh the bag system to apply changes
-					addon:OnDisable()
-					addon:OnEnable()
-				end,
-				disabled = function()
-					-- Only available when BetterBags is detected
-					return addon.BagSystems['betterbags'] == nil or not addon.BagSystems['betterbags']:IsAvailable()
-				end
-			},
-			betterBagsCategoryColor = {
-				type = 'color',
-				name = 'Category Name Color',
-				desc = 'Color for BetterBags category names. Reload UI to see changes.',
-				hasAlpha = false,
-				order = 9,
-				get = function()
-					local color = addon.DB.BetterBags_CategoryColor
-					return color.r, color.g, color.b
-				end,
-				set = function(_, r, g, b)
-					addon.DB.BetterBags_CategoryColor = {r = r, g = g, b = b}
-				end,
-				disabled = function()
-					return not addon.DB.BetterBags_EnableCategories or addon.BagSystems['betterbags'] == nil or not addon.BagSystems['betterbags']:IsAvailable()
-				end
-			},
-			betterBagsNote = {
-				type = 'description',
-				name = 'Note: The item type filters below affect both visual highlighting AND BetterBags categories.',
-				order = 9.5
-			},
-			showGlow = {
-				type = 'toggle',
-				name = 'Show Glow Animation',
-				desc = 'Display animated blue-to-green glow effect on openable items',
-				get = function()
-					return addon.DB.ShowGlow
-				end,
-				set = function(_, value)
-					addon.DB.ShowGlow = value
-					-- Refresh all widgets when glow is toggled
-					local bagSystem = addon:GetActiveBagSystem()
-					if bagSystem and bagSystem.RefreshAllCornerWidgets then
-						bagSystem.RefreshAllCornerWidgets()
-					end
-				end,
-				order = 10
-			},
-			showIndicator = {
-				type = 'toggle',
-				name = 'Show Indicator Icon',
-				desc = 'Display static treasure map icon on openable items',
-				get = function()
-					return addon.DB.ShowIndicator
-				end,
-				set = function(_, value)
-					addon.DB.ShowIndicator = value
-					-- Refresh all widgets when indicator is toggled
-					local bagSystem = addon:GetActiveBagSystem()
-					if bagSystem and bagSystem.RefreshAllCornerWidgets then
-						bagSystem.RefreshAllCornerWidgets()
-					end
-				end,
-				order = 11
-			},
-			itemTypeFilters = {
-				type = 'group',
-				name = 'Item Type Filters',
-				inline = true,
-				order = 20,
-				get = function(info)
-					return addon.DB[info[#info]]
-				end,
-				set = function(info, value)
-					addon.DB[info[#info]] = value
-					-- Reset cache since filter criteria changed
-					addon.GlobalDB.itemCache.openable = {}
-					addon.GlobalDB.itemCache.notOpenable = {}
-					local bagSystem = addon:GetActiveBagSystem()
-					if bagSystem and bagSystem.RefreshAllCornerWidgets then
-						bagSystem.RefreshAllCornerWidgets()
-					end
-				end,
-				args = {
-					filterDesc = {
+					bagSystemHeader = {
+						type = 'header',
+						name = 'General Settings',
+						order = 5,
+					},
+					bagSystemSelect = {
+						type = 'select',
+						name = 'Bag System',
+						desc = 'Choose which bag addon to integrate with',
+						values = {
+							auto = 'Auto-detect',
+							baganator = 'Baganator',
+							bagnon = 'Bagnon',
+							betterbags = 'BetterBags',
+							elvui = 'ElvUI',
+							blizzard = 'Blizzard Default',
+							adibags = 'AdiBags',
+						},
+						get = function()
+							return addon.DB.BagSystem
+						end,
+						set = function(_, value)
+							addon.DB.BagSystem = value
+							-- Refresh the bag system
+							addon:OnDisable()
+							addon:OnEnable()
+						end,
+						order = 6,
+					},
+					betterBagsHeader = {
+						type = 'header',
+						name = 'BetterBags Integration',
+						order = 7,
+					},
+					betterBagsEnableCategories = {
+						type = 'toggle',
+						name = 'Enable BetterBags Categories',
+						desc = 'Creates named categories in BetterBags for openable items (Openable, Toys, Mounts, etc.). Reload UI to see changes.',
+						order = 8,
+						get = function()
+							return addon.DB.BetterBags_EnableCategories
+						end,
+						set = function(_, value)
+							addon.DB.BetterBags_EnableCategories = value
+							-- Refresh the bag system to apply changes
+							addon:OnDisable()
+							addon:OnEnable()
+						end,
+						disabled = function()
+							-- Only available when BetterBags is detected
+							return addon.BagSystems['betterbags'] == nil or not addon.BagSystems['betterbags']:IsAvailable()
+						end,
+					},
+					betterBagsCategoryColor = {
+						type = 'color',
+						name = 'Category Name Color',
+						desc = 'Color for BetterBags category names. Reload UI to see changes.',
+						hasAlpha = false,
+						order = 9,
+						get = function()
+							local color = addon.DB.BetterBags_CategoryColor
+							return color.r, color.g, color.b
+						end,
+						set = function(_, r, g, b)
+							addon.DB.BetterBags_CategoryColor = { r = r, g = g, b = b }
+						end,
+						disabled = function()
+							return not addon.DB.BetterBags_EnableCategories or addon.BagSystems['betterbags'] == nil or not addon.BagSystems['betterbags']:IsAvailable()
+						end,
+					},
+					betterBagsNote = {
 						type = 'description',
-						name = 'Choose which types of openable items to highlight:',
-						order = 1
+						name = 'Note: The item type filters below affect both visual highlighting AND BetterBags categories.',
+						order = 9.5,
 					},
-					FilterToys = {
+					showGlow = {
 						type = 'toggle',
-						name = 'Toys',
-						desc = 'Highlight toy items that can be learned',
-						order = 10
+						name = 'Show Glow Animation',
+						desc = 'Display animated blue-to-green glow effect on openable items',
+						get = function()
+							return addon.DB.ShowGlow
+						end,
+						set = function(_, value)
+							addon.DB.ShowGlow = value
+							-- Refresh all widgets when glow is toggled
+							local bagSystem = addon:GetActiveBagSystem()
+							if bagSystem and bagSystem.RefreshAllCornerWidgets then
+								bagSystem.RefreshAllCornerWidgets()
+							end
+						end,
+						order = 10,
 					},
-					FilterAppearance = {
+					showIndicator = {
 						type = 'toggle',
-						name = 'Appearances',
-						desc = 'Highlight items that teach appearances/transmog',
-						order = 11
+						name = 'Show Indicator Icon',
+						desc = 'Display static treasure map icon on openable items',
+						get = function()
+							return addon.DB.ShowIndicator
+						end,
+						set = function(_, value)
+							addon.DB.ShowIndicator = value
+							-- Refresh all widgets when indicator is toggled
+							local bagSystem = addon:GetActiveBagSystem()
+							if bagSystem and bagSystem.RefreshAllCornerWidgets then
+								bagSystem.RefreshAllCornerWidgets()
+							end
+						end,
+						order = 11,
 					},
-					FilterMounts = {
-						type = 'toggle',
-						name = 'Mounts',
-						desc = 'Highlight mount teaching items',
-						order = 12
+					itemTypeFilters = {
+						type = 'group',
+						name = 'Item Type Filters',
+						inline = true,
+						order = 20,
+						get = function(info)
+							return addon.DB[info[#info]]
+						end,
+						set = function(info, value)
+							addon.DB[info[#info]] = value
+							-- Reset cache since filter criteria changed
+							addon.GlobalDB.itemCache.openable = {}
+							addon.GlobalDB.itemCache.notOpenable = {}
+							local bagSystem = addon:GetActiveBagSystem()
+							if bagSystem and bagSystem.RefreshAllCornerWidgets then
+								bagSystem.RefreshAllCornerWidgets()
+							end
+						end,
+						args = {
+							filterDesc = {
+								type = 'description',
+								name = 'Choose which types of openable items to highlight:',
+								order = 1,
+							},
+							FilterToys = {
+								type = 'toggle',
+								name = 'Toys',
+								desc = 'Highlight toy items that can be learned',
+								order = 10,
+							},
+							FilterAppearance = {
+								type = 'toggle',
+								name = 'Appearances',
+								desc = 'Highlight items that teach appearances/transmog',
+								order = 11,
+							},
+							FilterMounts = {
+								type = 'toggle',
+								name = 'Mounts',
+								desc = 'Highlight mount teaching items',
+								order = 12,
+							},
+							FilterCompanion = {
+								type = 'toggle',
+								name = 'Companions/Pets',
+								desc = 'Highlight companion and pet items',
+								order = 13,
+							},
+							FilterRepGain = {
+								type = 'toggle',
+								name = 'Reputation Items',
+								desc = 'Highlight items that give reputation',
+								order = 14,
+							},
+							FilterCurios = {
+								type = 'toggle',
+								name = 'Curios',
+								desc = 'Highlight curio items',
+								order = 15,
+							},
+							FilterContainers = {
+								type = 'toggle',
+								name = 'Containers',
+								desc = "Highlight containers with 'Right click to open' text (caches, chests, etc.)",
+								order = 16,
+							},
+							FilterLockboxes = {
+								type = 'toggle',
+								name = 'Lockboxes',
+								desc = 'Highlight locked items that require keys to open',
+								order = 16.5,
+							},
+							FilterKnowledge = {
+								type = 'toggle',
+								name = 'Knowledge Items',
+								desc = 'Highlight knowledge/profession learning items',
+								order = 17,
+							},
+							CreatableItem = {
+								type = 'toggle',
+								name = 'Creatable Items',
+								desc = 'Highlight items that create class-specific gear',
+								order = 18,
+							},
+							FilterGenericUse = {
+								type = 'toggle',
+								name = 'Generic Use Items',
+								desc = "Highlight generic 'Use:' items (may be noisy)",
+								order = 19,
+							},
+						},
 					},
-					FilterCompanion = {
-						type = 'toggle',
-						name = 'Companions/Pets',
-						desc = 'Highlight companion and pet items',
-						order = 13
+					statisticsHeader = {
+						type = 'header',
+						name = 'Item Statistics',
+						order = 35,
 					},
-					FilterRepGain = {
-						type = 'toggle',
-						name = 'Reputation Items',
-						desc = 'Highlight items that give reputation',
-						order = 14
+					statisticsDescription = {
+						type = 'description',
+						name = 'View counts of openable items in your bags by category.',
+						order = 36,
 					},
-					FilterCurios = {
-						type = 'toggle',
-						name = 'Curios',
-						desc = 'Highlight curio items',
-						order = 15
-					},
-					FilterContainers = {
-						type = 'toggle',
-						name = 'Containers',
-						desc = "Highlight containers with 'Right click to open' text (caches, chests, etc.)",
-						order = 16
-					},
-					FilterLockboxes = {
-						type = 'toggle',
-						name = 'Lockboxes',
-						desc = 'Highlight locked items that require keys to open',
-						order = 16.5
-					},
-					FilterKnowledge = {
-						type = 'toggle',
-						name = 'Knowledge Items',
-						desc = 'Highlight knowledge/profession learning items',
-						order = 17
-					},
-					CreatableItem = {
-						type = 'toggle',
-						name = 'Creatable Items',
-						desc = 'Highlight items that create class-specific gear',
-						order = 18
-					},
-					FilterGenericUse = {
-						type = 'toggle',
-						name = 'Generic Use Items',
-						desc = "Highlight generic 'Use:' items (may be noisy)",
-						order = 19
-					}
-				}
-			},
-			statisticsHeader = {
-				type = 'header',
-				name = 'Item Statistics',
-				order = 35
-			},
-			statisticsDescription = {
-				type = 'description',
-				name = 'View counts of openable items in your bags by category.',
-				order = 36
-			},
-			viewStatistics = {
-				type = 'execute',
-				name = 'View Statistics',
-				desc = 'Scan your bags and display item counts by category',
-				func = function()
-					local stats = root.GetItemStatistics()
+					viewStatistics = {
+						type = 'execute',
+						name = 'View Statistics',
+						desc = 'Scan your bags and display item counts by category',
+						func = function()
+							local stats = root.GetItemStatistics()
 
-					-- Build formatted output
-					local output = "|cff2beefdLib's - Item Highlighter: Item Statistics|r\n\n"
-					local totalCount = 0
+							-- Build formatted output
+							local output = "|cff2beefdLib's - Item Highlighter: Item Statistics|r\n\n"
+							local totalCount = 0
 
-					-- Sort categories alphabetically for consistent display
-					local categories = {}
-					for category, count in pairs(stats) do
-						if count > 0 then
-							table.insert(categories, {name = category, count = count})
-							totalCount = totalCount + count
-						end
-					end
+							-- Sort categories alphabetically for consistent display
+							local categories = {}
+							for category, count in pairs(stats) do
+								if count > 0 then
+									table.insert(categories, { name = category, count = count })
+									totalCount = totalCount + count
+								end
+							end
 
-					table.sort(categories, function(a, b) return a.name < b.name end)
+							table.sort(categories, function(a, b)
+								return a.name < b.name
+							end)
 
-					if totalCount == 0 then
-						output = output .. "|cffFFAA00No openable items found in your bags.|r"
-					else
-						for _, data in ipairs(categories) do
-							output = output .. string.format("|cffFFFFFF%s:|r %d\n", data.name, data.count)
-						end
-						output = output .. string.format("\n|cff00FF00Total:|r %d items", totalCount)
-					end
+							if totalCount == 0 then
+								output = output .. '|cffFFAA00No openable items found in your bags.|r'
+							else
+								for _, data in ipairs(categories) do
+									output = output .. string.format('|cffFFFFFF%s:|r %d\n', data.name, data.count)
+								end
+								output = output .. string.format('\n|cff00FF00Total:|r %d items', totalCount)
+							end
 
-					print(output)
-				end,
-				order = 37
-			},
-			cacheHeader = {
-				type = 'header',
-				name = 'Cache Management',
-				order = 40
-			},
-			resetCache = {
-				type = 'execute',
-				name = 'Reset Item Cache',
-				desc = 'Clear all cached item openability data. Use this if items are incorrectly cached.',
-				func = function()
-					local openableCount = 0
-					local notOpenableCount = 0
+							print(output)
+						end,
+						order = 37,
+					},
+					cacheHeader = {
+						type = 'header',
+						name = 'Cache Management',
+						order = 40,
+					},
+					resetCache = {
+						type = 'execute',
+						name = 'Reset Item Cache',
+						desc = 'Clear all cached item openability data. Use this if items are incorrectly cached.',
+						func = function()
+							local openableCount = 0
+							local notOpenableCount = 0
 
-					-- Count items before clearing
-					for _ in pairs(addon.GlobalDB.itemCache.openable) do
-						openableCount = openableCount + 1
-					end
-					for _ in pairs(addon.GlobalDB.itemCache.notOpenable) do
-						notOpenableCount = notOpenableCount + 1
-					end
+							-- Count items before clearing
+							for _ in pairs(addon.GlobalDB.itemCache.openable) do
+								openableCount = openableCount + 1
+							end
+							for _ in pairs(addon.GlobalDB.itemCache.notOpenable) do
+								notOpenableCount = notOpenableCount + 1
+							end
 
-					-- Clear cache
-					addon.GlobalDB.itemCache.openable = {}
-					addon.GlobalDB.itemCache.notOpenable = {}
+							-- Clear cache
+							addon.GlobalDB.itemCache.openable = {}
+							addon.GlobalDB.itemCache.notOpenable = {}
 
-					Log('Cache reset: cleared ' .. openableCount .. ' openable items and ' .. notOpenableCount .. ' not openable items')
-					print("Lib's - Item Highlighter: Cache reset - cleared " .. (openableCount + notOpenableCount) .. ' cached items')
+							Log('Cache reset: cleared ' .. openableCount .. ' openable items and ' .. notOpenableCount .. ' not openable items')
+							print("Lib's - Item Highlighter: Cache reset - cleared " .. (openableCount + notOpenableCount) .. ' cached items')
 
-					-- Refresh widgets to re-evaluate items
-					local bagSystem = addon:GetActiveBagSystem()
-					if bagSystem and bagSystem.RefreshAllCornerWidgets then
-						bagSystem.RefreshAllCornerWidgets()
-					end
-				end,
-				order = 41
-			},
-			debugHeader = {
-				type = 'header',
-				name = 'Item Debug Tools',
-				order = 42
-			},
-			debugInput = {
-				type = 'input',
-				name = 'Item ID to Debug',
-				desc = 'Enter an item ID to debug why it is or isn\'t marked as openable',
-				get = function()
-					return addon.debugItemID or ''
-				end,
-				set = function(_, value)
-					addon.debugItemID = value
-				end,
-				order = 43
-			},
-			debugExecute = {
-				type = 'execute',
-				name = 'Debug Item',
-				desc = 'Analyze the specified item ID and explain why it is or isn\'t openable',
-				func = function()
-					local itemID = tonumber(addon.debugItemID)
-					if itemID then
-						addon:DebugItemOpenability(itemID)
-					else
-						print('|cffFFFF00ItemHighlighter:|r Please enter a valid item ID')
-					end
-				end,
-				order = 44
-			}
-				}
+							-- Refresh widgets to re-evaluate items
+							local bagSystem = addon:GetActiveBagSystem()
+							if bagSystem and bagSystem.RefreshAllCornerWidgets then
+								bagSystem.RefreshAllCornerWidgets()
+							end
+						end,
+						order = 41,
+					},
+					debugHeader = {
+						type = 'header',
+						name = 'Item Debug Tools',
+						order = 42,
+					},
+					debugInput = {
+						type = 'input',
+						name = 'Item ID to Debug',
+						desc = "Enter an item ID to debug why it is or isn't marked as openable",
+						get = function()
+							return addon.debugItemID or ''
+						end,
+						set = function(_, value)
+							addon.debugItemID = value
+						end,
+						order = 43,
+					},
+					debugExecute = {
+						type = 'execute',
+						name = 'Debug Item',
+						desc = "Analyze the specified item ID and explain why it is or isn't openable",
+						func = function()
+							local itemID = tonumber(addon.debugItemID)
+							if itemID then
+								addon:DebugItemOpenability(itemID)
+							else
+								print('|cffFFFF00ItemHighlighter:|r Please enter a valid item ID')
+							end
+						end,
+						order = 44,
+					},
+				},
 			},
 			CustomLists = {
 				type = 'group',
@@ -552,7 +554,7 @@ local function GetOptions()
 					description = {
 						type = 'description',
 						name = 'Add items to force them to be highlighted (whitelist) or never highlighted (blacklist). You can enter an item ID, paste an item link, or type an item name.',
-						order = 0
+						order = 0,
 					},
 					Whitelist = {
 						type = 'group',
@@ -562,7 +564,7 @@ local function GetOptions()
 							description = {
 								type = 'description',
 								name = 'Items in the whitelist will ALWAYS be highlighted, regardless of filter settings.',
-								order = 1
+								order = 1,
 							},
 							create = {
 								type = 'input',
@@ -579,7 +581,7 @@ local function GetOptions()
 										if itemID then
 											addon.DB.customWhitelist[itemID] = itemName
 											buildItemList('customWhitelist', 'Whitelist', GetOptions().args.CustomLists.args.Whitelist)
-											print("|cff00FF00Added to whitelist:|r " .. (itemName or 'Item ' .. itemID))
+											print('|cff00FF00Added to whitelist:|r ' .. (itemName or 'Item ' .. itemID))
 
 											-- Refresh bags
 											local bagSystem = addon:GetActiveBagSystem()
@@ -590,7 +592,7 @@ local function GetOptions()
 											print('|cffFF0000Invalid item input:|r Could not find item: ' .. input)
 										end
 									end
-								end
+								end,
 							},
 							pageSize = {
 								type = 'range',
@@ -607,9 +609,9 @@ local function GetOptions()
 									addon.DB.pageSize = value
 									addon.DB.currentWhitelistPage = 1
 									buildItemList('customWhitelist', 'Whitelist', GetOptions().args.CustomLists.args.Whitelist)
-								end
-							}
-						}
+								end,
+							},
+						},
 					},
 					Blacklist = {
 						type = 'group',
@@ -619,7 +621,7 @@ local function GetOptions()
 							description = {
 								type = 'description',
 								name = 'Items in the blacklist will NEVER be highlighted, even if they match filter criteria.',
-								order = 1
+								order = 1,
 							},
 							create = {
 								type = 'input',
@@ -636,7 +638,7 @@ local function GetOptions()
 										if itemID then
 											addon.DB.customBlacklist[itemID] = itemName
 											buildItemList('customBlacklist', 'Blacklist', GetOptions().args.CustomLists.args.Blacklist)
-											print("|cffFF0000Added to blacklist:|r " .. (itemName or 'Item ' .. itemID))
+											print('|cffFF0000Added to blacklist:|r ' .. (itemName or 'Item ' .. itemID))
 
 											-- Refresh bags
 											local bagSystem = addon:GetActiveBagSystem()
@@ -647,7 +649,7 @@ local function GetOptions()
 											print('|cffFF0000Invalid item input:|r Could not find item: ' .. input)
 										end
 									end
-								end
+								end,
 							},
 							pageSize = {
 								type = 'range',
@@ -664,11 +666,11 @@ local function GetOptions()
 									addon.DB.pageSize = value
 									addon.DB.currentBlacklistPage = 1
 									buildItemList('customBlacklist', 'Blacklist', GetOptions().args.CustomLists.args.Blacklist)
-								end
-							}
-						}
-					}
-				}
+								end,
+							},
+						},
+					},
+				},
 			},
 			Animation = {
 				type = 'group',
@@ -681,56 +683,56 @@ local function GetOptions()
 						inline = true,
 						order = 1,
 						args = {
-					cycleTime = {
-						type = 'range',
-						name = 'Cycle Time',
-						desc = 'Time to fade from one color to another (seconds)',
-						min = 0.1,
-						max = 6.0,
-						step = 0.05,
-						get = function()
-							return addon.DB.AnimationCycleTime
-						end,
-						set = function(_, value)
-							addon.DB.AnimationCycleTime = value
-						end,
-						order = 1
+							cycleTime = {
+								type = 'range',
+								name = 'Cycle Time',
+								desc = 'Time to fade from one color to another (seconds)',
+								min = 0.1,
+								max = 6.0,
+								step = 0.05,
+								get = function()
+									return addon.DB.AnimationCycleTime
+								end,
+								set = function(_, value)
+									addon.DB.AnimationCycleTime = value
+								end,
+								order = 1,
+							},
+							betweenCycles = {
+								type = 'range',
+								name = 'Pause Between Cycles',
+								desc = 'Time to pause at each color (seconds)',
+								min = 0.1,
+								max = 6.0,
+								step = 0.05,
+								get = function()
+									return addon.DB.TimeBetweenCycles
+								end,
+								set = function(_, value)
+									addon.DB.TimeBetweenCycles = value
+								end,
+								order = 2,
+							},
+							updateInterval = {
+								type = 'range',
+								name = 'Update Interval',
+								desc = 'How often to update the animation (seconds) - lower = smoother',
+								min = 0.1,
+								max = 6.0,
+								step = 0.05,
+								get = function()
+									return addon.DB.AnimationUpdateInterval
+								end,
+								set = function(_, value)
+									addon.DB.AnimationUpdateInterval = value
+								end,
+								order = 3,
+							},
+						},
 					},
-					betweenCycles = {
-						type = 'range',
-						name = 'Pause Between Cycles',
-						desc = 'Time to pause at each color (seconds)',
-						min = 0.1,
-						max = 6.0,
-						step = 0.05,
-						get = function()
-							return addon.DB.TimeBetweenCycles
-						end,
-						set = function(_, value)
-							addon.DB.TimeBetweenCycles = value
-						end,
-						order = 2
-					},
-					updateInterval = {
-						type = 'range',
-						name = 'Update Interval',
-						desc = 'How often to update the animation (seconds) - lower = smoother',
-						min = 0.1,
-						max = 6.0,
-						step = 0.05,
-						get = function()
-							return addon.DB.AnimationUpdateInterval
-						end,
-						set = function(_, value)
-							addon.DB.AnimationUpdateInterval = value
-						end,
-						order = 3
-					}
-						}
-					}
-				}
-			}
-		}
+				},
+			},
+		},
 	}
 end
 
@@ -766,20 +768,22 @@ function addon:SetupOptions()
 			local categories = {}
 			for category, count in pairs(stats) do
 				if count > 0 then
-					table.insert(categories, {name = category, count = count})
+					table.insert(categories, { name = category, count = count })
 					totalCount = totalCount + count
 				end
 			end
 
-			table.sort(categories, function(a, b) return a.name < b.name end)
+			table.sort(categories, function(a, b)
+				return a.name < b.name
+			end)
 
 			if totalCount == 0 then
-				output = output .. "|cffFFAA00No openable items found in your bags.|r"
+				output = output .. '|cffFFAA00No openable items found in your bags.|r'
 			else
 				for _, data in ipairs(categories) do
-					output = output .. string.format("|cffFFFFFF%s:|r %d\n", data.name, data.count)
+					output = output .. string.format('|cffFFFFFF%s:|r %d\n', data.name, data.count)
 				end
-				output = output .. string.format("\n|cff00FF00Total:|r %d items", totalCount)
+				output = output .. string.format('\n|cff00FF00Total:|r %d items', totalCount)
 			end
 
 			print(output)
@@ -798,19 +802,19 @@ function addon:SetupOptions()
 					print("Lib's - Item Highlighter profile exported:")
 					print(exported)
 				else
-					print("Failed to export profile")
+					print('Failed to export profile')
 				end
 			elseif msg:match('^import ') then
 				local importString = msg:match('^import (.+)')
 				if importString and importString ~= '' then
 					local success = addon.ProfileManager:ImportProfile(importString)
 					if success then
-						print("Profile imported successfully!")
+						print('Profile imported successfully!')
 					else
-						print("Failed to import profile")
+						print('Failed to import profile')
 					end
 				else
-					print("Usage: /ihprofile import <profile_string>")
+					print('Usage: /ihprofile import <profile_string>')
 				end
 			else
 				addon.ProfileManager:ShowWindow()

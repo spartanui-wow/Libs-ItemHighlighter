@@ -4,7 +4,7 @@ local Log = root.Log
 
 ---@class BagnonIntegration
 local BagnonIntegration = {
-	name = 'Bagnon'
+	name = 'Bagnon',
 }
 
 -- Store item button widgets that we've created
@@ -25,12 +25,12 @@ function BagnonIntegration:AreBagsVisible()
 
 	-- Check for visible Bagnon frames using common patterns
 	local framePatterns = {
-		"BagnonFrameinventory",
-		"BagnonFramebank",
-		"BagnonFrameguild",
-		"BagnonFramekeys",
-		"BagnonFramevoid",
-		"BagnonFramereagent"
+		'BagnonFrameinventory',
+		'BagnonFramebank',
+		'BagnonFrameguild',
+		'BagnonFramekeys',
+		'BagnonFramevoid',
+		'BagnonFramereagent',
 	}
 
 	for _, frameName in ipairs(framePatterns) do
@@ -111,7 +111,7 @@ local function BagnonItemUpdater(itemButton)
 		local itemDetails = {
 			itemLink = itemLink,
 			bagID = bagID,
-			slotID = slotID
+			slotID = slotID,
 		}
 
 		-- Use our core checking function to determine if item is openable
@@ -160,7 +160,7 @@ local function RefreshAllWidgets()
 
 		-- The Bagnon module system will automatically call our updater
 		-- for all visible item buttons when they refresh
-		addon:SendMessage("BAG_UPDATE_DELAYED")
+		addon:SendMessage('BAG_UPDATE_DELAYED')
 	end, 0.1)
 end
 
@@ -176,9 +176,7 @@ function BagnonIntegration:OnEnable()
 	-- This is how Bagnon_BoE and other plugins actually work
 	if Bagnon.Item then
 		-- Find the correct update method to hook
-		local method = Bagnon.Item.UpdateSecondary and "UpdateSecondary" or
-		               Bagnon.Item.UpdatePrimary and "UpdatePrimary" or
-		               Bagnon.Item.Update and "Update"
+		local method = Bagnon.Item.UpdateSecondary and 'UpdateSecondary' or Bagnon.Item.UpdatePrimary and 'UpdatePrimary' or Bagnon.Item.Update and 'Update'
 
 		if method then
 			hooksecurefunc(Bagnon.Item, method, BagnonItemUpdater)
@@ -193,7 +191,7 @@ function BagnonIntegration:OnEnable()
 	end
 
 	-- Hook into bag visibility events for animation timer management
-	addon:RegisterMessage("BAG_UPDATE_DELAYED", function()
+	addon:RegisterMessage('BAG_UPDATE_DELAYED', function()
 		if self:AreBagsVisible() then
 			Log('Bagnon bags visible - starting animation timer', 'debug')
 			root.Animation.StartGlobalTimer()

@@ -30,7 +30,7 @@ local profile = {
 	BagSystem = 'auto',
 	-- BetterBags integration
 	BetterBags_EnableCategories = true,
-	BetterBags_CategoryColor = {r = 0.17, g = 0.93, b = 0.93}, -- Cyan default
+	BetterBags_CategoryColor = { r = 0.17, g = 0.93, b = 0.93 }, -- Cyan default
 	-- Custom whitelist/blacklist
 	customWhitelist = {}, -- [itemID] = itemName
 	customBlacklist = {}, -- [itemID] = itemName
@@ -38,7 +38,7 @@ local profile = {
 	currentWhitelistPage = 1,
 	currentBlacklistPage = 1,
 	searchWhitelist = '',
-	searchBlacklist = ''
+	searchBlacklist = '',
 }
 
 -- Localization
@@ -47,20 +47,20 @@ local Localized = {
 		['Use: Teaches you how to summon this mount'] = 'Benutzen: Lehrt Euch, dieses Reittier herbeizurufen',
 		['Use: Collect the appearance'] = 'Benutzen: Sammelt das Aussehen',
 		['reputation with'] = 'Ruf bei',
-		['reputation towards'] = 'Ruf bei'
+		['reputation towards'] = 'Ruf bei',
 	},
 	esES = {
 		['Use: Teaches you how to summon this mount'] = 'Uso: Te enseña a invocar esta montura',
 		['Use: Collect the appearance'] = 'Uso: Recoge la apariencia',
 		['reputation with'] = 'reputación con',
-		['reputation towards'] = 'reputación hacia'
+		['reputation towards'] = 'reputación hacia',
 	},
 	frFR = {
 		['Use: Teaches you how to summon this mount'] = 'Utilisation: Vous apprend à invoquer cette monture',
 		['Use: Collect the appearance'] = "Utilisation: Collectionnez l'apparence",
 		['reputation with'] = 'réputation auprès',
-		['reputation towards'] = 'réputation envers'
-	}
+		['reputation towards'] = 'réputation envers',
+	},
 }
 
 local Locale = GetLocale()
@@ -109,7 +109,7 @@ local SearchItems = {
 	'Right click to open',
 	'<Right Click to Open>',
 	'<Right click to open>',
-	ITEM_OPENABLE
+	ITEM_OPENABLE,
 }
 
 -- Helper function to cache and return openable result
@@ -209,10 +209,15 @@ local function CheckItem(itemDetails)
 
 				-- Check for containers (caches, chests, etc.)
 				if
-					addon.DB.FilterContainers and
-						(string.find(LineText, 'Weekly cache') or string.find(LineText, 'Cache of') or string.find(LineText, 'Right [Cc]lick to open') or string.find(LineText, '<Right [Cc]lick to [Oo]pen>') or
-							string.find(LineText, 'Contains'))
-				 then
+					addon.DB.FilterContainers
+					and (
+						string.find(LineText, 'Weekly cache')
+						or string.find(LineText, 'Cache of')
+						or string.find(LineText, 'Right [Cc]lick to open')
+						or string.find(LineText, '<Right [Cc]lick to [Oo]pen>')
+						or string.find(LineText, 'Contains')
+					)
+				then
 					Log('Found container with right click text: ' .. LineText)
 					return CacheOpenableResult(itemID, true)
 				end
@@ -224,8 +229,9 @@ local function CheckItem(itemDetails)
 				-- Remove (%s). from ITEM_CREATE_LOOT_SPEC_ITEM
 				local CreateItemString = ITEM_CREATE_LOOT_SPEC_ITEM:gsub(' %(%%s%)%.', '')
 				if
-					addon.DB.CreatableItem and (string.find(LineText, CreateItemString) or string.find(LineText, 'Create a soulbound item for your class') or string.find(LineText, 'item appropriate for your class'))
-				 then
+					addon.DB.CreatableItem
+					and (string.find(LineText, CreateItemString) or string.find(LineText, 'Create a soulbound item for your class') or string.find(LineText, 'item appropriate for your class'))
+				then
 					return CacheOpenableResult(itemID, true)
 				end
 
@@ -246,9 +252,10 @@ local function CheckItem(itemDetails)
 				end
 
 				if
-					addon.DB.FilterRepGain and (string.find(LineText, REP_USE_TEXT) or string.find(LineText, GetLocaleString('reputation towards')) or string.find(LineText, GetLocaleString('reputation with'))) and
-						string.find(LineText, ITEM_SPELL_TRIGGER_ONUSE)
-				 then
+					addon.DB.FilterRepGain
+					and (string.find(LineText, REP_USE_TEXT) or string.find(LineText, GetLocaleString('reputation towards')) or string.find(LineText, GetLocaleString('reputation with')))
+					and string.find(LineText, ITEM_SPELL_TRIGGER_ONUSE)
+				then
 					return CacheOpenableResult(itemID, true)
 				end
 
@@ -359,9 +366,12 @@ function addon:DebugItemOpenability(itemID)
 
 				-- Check containers
 				if
-					(string.find(LineText, 'Weekly cache') or string.find(LineText, 'Cache of') or string.find(LineText, 'Right [Cc]lick to open') or string.find(LineText, '<Right [Cc]lick to [Oo]pen>') or
-						string.find(LineText, 'Contains'))
-				 then
+					string.find(LineText, 'Weekly cache')
+					or string.find(LineText, 'Cache of')
+					or string.find(LineText, 'Right [Cc]lick to open')
+					or string.find(LineText, '<Right [Cc]lick to [Oo]pen>')
+					or string.find(LineText, 'Contains')
+				then
 					if addon.DB.FilterContainers then
 						print('|cff00FF00MATCH:|r Container text (FilterContainers enabled)')
 						foundMatch = true
@@ -372,7 +382,7 @@ function addon:DebugItemOpenability(itemID)
 				end
 
 				-- Check appearance
-				if (string.find(LineText, ITEM_COSMETIC_LEARN) or string.find(LineText, GetLocaleString('Use: Collect the appearance'))) then
+				if string.find(LineText, ITEM_COSMETIC_LEARN) or string.find(LineText, GetLocaleString('Use: Collect the appearance')) then
 					if addon.DB.FilterAppearance then
 						print('|cff00FF00MATCH:|r Appearance item (FilterAppearance enabled)')
 						foundMatch = true
@@ -384,7 +394,7 @@ function addon:DebugItemOpenability(itemID)
 
 				-- Check creatable items
 				local CreateItemString = ITEM_CREATE_LOOT_SPEC_ITEM:gsub(' %(%%s%)%.', '')
-				if (string.find(LineText, CreateItemString) or string.find(LineText, 'Create a soulbound item for your class') or string.find(LineText, 'item appropriate for your class')) then
+				if string.find(LineText, CreateItemString) or string.find(LineText, 'Create a soulbound item for your class') or string.find(LineText, 'item appropriate for your class') then
 					if addon.DB.CreatableItem then
 						print('|cff00FF00MATCH:|r Creatable item (CreatableItem enabled)')
 						foundMatch = true
@@ -428,7 +438,7 @@ function addon:DebugItemOpenability(itemID)
 				end
 
 				-- Check knowledge
-				if (string.find(LineText, 'Knowledge') and string.find(LineText, 'Study to increase')) then
+				if string.find(LineText, 'Knowledge') and string.find(LineText, 'Study to increase') then
 					if addon.DB.FilterKnowledge then
 						print('|cff00FF00MATCH:|r Knowledge item (FilterKnowledge enabled)')
 						foundMatch = true
@@ -440,9 +450,9 @@ function addon:DebugItemOpenability(itemID)
 
 				-- Check reputation
 				if
-					(string.find(LineText, REP_USE_TEXT) or string.find(LineText, GetLocaleString('reputation towards')) or string.find(LineText, GetLocaleString('reputation with'))) and
-						string.find(LineText, ITEM_SPELL_TRIGGER_ONUSE)
-				 then
+					(string.find(LineText, REP_USE_TEXT) or string.find(LineText, GetLocaleString('reputation towards')) or string.find(LineText, GetLocaleString('reputation with')))
+					and string.find(LineText, ITEM_SPELL_TRIGGER_ONUSE)
+				then
 					if addon.DB.FilterRepGain then
 						print('|cff00FF00MATCH:|r Reputation item (FilterRepGain enabled)')
 						foundMatch = true
@@ -453,7 +463,7 @@ function addon:DebugItemOpenability(itemID)
 				end
 
 				-- Check mounts
-				if (string.find(LineText, GetLocaleString('Use: Teaches you how to summon this mount')) or string.find(LineText, 'Drakewatcher Manuscript')) then
+				if string.find(LineText, GetLocaleString('Use: Teaches you how to summon this mount')) or string.find(LineText, 'Drakewatcher Manuscript') then
 					if addon.DB.FilterMounts then
 						print('|cff00FF00MATCH:|r Mount item (FilterMounts enabled)')
 						foundMatch = true
@@ -490,7 +500,7 @@ function addon:DebugItemOpenability(itemID)
 				end
 
 				-- Check containers on right side
-				if (string.find(RightLineText, 'Right [Cc]lick to open') or string.find(RightLineText, '<Right [Cc]lick to [Oo]pen>')) then
+				if string.find(RightLineText, 'Right [Cc]lick to open') or string.find(RightLineText, '<Right [Cc]lick to [Oo]pen>') then
 					if addon.DB.FilterContainers then
 						print('|cff00FF00MATCH:|r Container text on right (FilterContainers enabled)')
 						foundMatch = true
@@ -604,7 +614,7 @@ local function CheckItemWithCategory(itemDetails)
 	-- Check custom whitelist/blacklist FIRST
 	if itemID and addon.DB then
 		if addon.DB.customWhitelist[itemID] then
-			return "Whitelist Items"
+			return 'Whitelist Items'
 		end
 		if addon.DB.customBlacklist[itemID] then
 			return nil
@@ -627,7 +637,7 @@ local function CheckItemWithCategory(itemDetails)
 	end
 
 	if Consumable and itemSubType and string.find(itemSubType, 'Curio') and addon.DB.FilterCurios then
-		return "Curios"
+		return 'Curios'
 	end
 
 	-- Tooltip scanning
@@ -649,59 +659,66 @@ local function CheckItemWithCategory(itemDetails)
 				-- Basic openable items (highest priority)
 				for _, v in pairs(SearchItems) do
 					if string.find(LineText, v) then
-						return "Openable"
+						return 'Openable'
 					end
 				end
 
 				-- Lockboxes
 				if LineText == LOCKED and addon.DB.FilterLockboxes then
-					return "Lockboxes"
+					return 'Lockboxes'
 				end
 
 				-- Cosmetics/Appearance
 				if addon.DB.FilterAppearance and (string.find(LineText, ITEM_COSMETIC_LEARN) or string.find(LineText, GetLocaleString('Use: Collect the appearance'))) then
-					return "Cosmetics"
+					return 'Cosmetics'
 				end
 
 				-- Creatable Items
 				local CreateItemString = ITEM_CREATE_LOOT_SPEC_ITEM:gsub(' %(%%s%)%.', '')
-				if addon.DB.CreatableItem and (string.find(LineText, CreateItemString) or string.find(LineText, 'Create a soulbound item for your class') or string.find(LineText, 'item appropriate for your class')) then
-					return "Creatable Items"
+				if
+					addon.DB.CreatableItem
+					and (string.find(LineText, CreateItemString) or string.find(LineText, 'Create a soulbound item for your class') or string.find(LineText, 'item appropriate for your class'))
+				then
+					return 'Creatable Items'
 				end
 
 				-- Toys
 				if addon.DB.FilterToys and string.find(LineText, ITEM_TOY_ONUSE) then
-					return "Toys"
+					return 'Toys'
 				end
 
 				-- Pets/Companions
 				if addon.DB.FilterCompanion and string.find(LineText, 'companion') then
-					return "Pets"
+					return 'Pets'
 				end
 
 				-- Knowledge
 				if addon.DB.FilterKnowledge and (string.find(LineText, 'Knowledge') and string.find(LineText, 'Study to increase')) then
-					return "Knowledge"
+					return 'Knowledge'
 				end
 
 				-- Reputation
-				if addon.DB.FilterRepGain and (string.find(LineText, REP_USE_TEXT) or string.find(LineText, GetLocaleString('reputation towards')) or string.find(LineText, GetLocaleString('reputation with'))) and string.find(LineText, ITEM_SPELL_TRIGGER_ONUSE) then
-					return "Reputation"
+				if
+					addon.DB.FilterRepGain
+					and (string.find(LineText, REP_USE_TEXT) or string.find(LineText, GetLocaleString('reputation towards')) or string.find(LineText, GetLocaleString('reputation with')))
+					and string.find(LineText, ITEM_SPELL_TRIGGER_ONUSE)
+				then
+					return 'Reputation'
 				end
 
 				-- Mounts
 				if addon.DB.FilterMounts and (string.find(LineText, GetLocaleString('Use: Teaches you how to summon this mount')) or string.find(LineText, 'Drakewatcher Manuscript')) then
-					return "Mounts"
+					return 'Mounts'
 				end
 
 				-- Containers (caches, etc.)
 				if addon.DB.FilterContainers and (string.find(LineText, 'Weekly cache') or string.find(LineText, 'Cache of') or string.find(LineText, 'Contains')) then
-					return "Containers"
+					return 'Containers'
 				end
 
 				-- Generic Use (checked last)
 				if addon.DB.FilterGenericUse and string.find(LineText, ITEM_SPELL_TRIGGER_ONUSE) then
-					return "Generic Use Items"
+					return 'Generic Use Items'
 				end
 			end
 		end
@@ -714,13 +731,13 @@ local function CheckItemWithCategory(itemDetails)
 				-- Basic openable items
 				for _, v in pairs(SearchItems) do
 					if string.find(RightLineText, v) then
-						return "Openable"
+						return 'Openable'
 					end
 				end
 
 				-- Containers
 				if addon.DB.FilterContainers and (string.find(RightLineText, 'Right [Cc]lick to open') or string.find(RightLineText, '<Right [Cc]lick to [Oo]pen>')) then
-					return "Containers"
+					return 'Containers'
 				end
 			end
 		end
@@ -746,7 +763,7 @@ local function GetItemStatistics()
 		['Containers'] = 0,
 		['Generic Use Items'] = 0,
 		["Delver's Bounty"] = 0,
-		['Whitelist Items'] = 0
+		['Whitelist Items'] = 0,
 	}
 
 	-- Scan all bag slots
@@ -759,7 +776,7 @@ local function GetItemStatistics()
 					local itemDetails = {
 						itemLink = itemLink,
 						bagID = bagID,
-						slotID = slotID
+						slotID = slotID,
 					}
 					local category = CheckItemWithCategory(itemDetails)
 					if category and stats[category] then
@@ -781,7 +798,7 @@ local function GetItemStatistics()
 						local itemDetails = {
 							itemLink = itemLink,
 							bagID = bagID,
-							slotID = slotID
+							slotID = slotID,
 						}
 						local category = CheckItemWithCategory(itemDetails)
 						if category and stats[category] then
@@ -818,7 +835,7 @@ function addon:GetAllAvailableBagSystems()
 	for name, integration in pairs(bagSystems) do
 		if integration and integration.IsAvailable and integration:IsAvailable() then
 			Log('Found available bag system: ' .. name)
-			table.insert(availableSystems, {name = name, integration = integration})
+			table.insert(availableSystems, { name = name, integration = integration })
 		end
 	end
 
@@ -864,9 +881,9 @@ function addon:OnInitialize()
 		global = {
 			itemCache = {
 				openable = {}, -- itemID -> true for confirmed openable items
-				notOpenable = {} -- itemID -> true for confirmed non-openable items
-			}
-		}
+				notOpenable = {}, -- itemID -> true for confirmed non-openable items
+			},
+		},
 	}
 	self.DataBase = LibStub('AceDB-3.0'):New('LibsIHDB', defaults, true) ---@type LibsIH.DB
 	self.DB = self.DataBase.profile
@@ -900,12 +917,9 @@ function addon:OnEnable()
 
 			Log('Enabling bag system: ' .. name)
 			if integration.OnEnable then
-				local success, error =
-					pcall(
-					function()
-						integration:OnEnable()
-					end
-				)
+				local success, error = pcall(function()
+					integration:OnEnable()
+				end)
 
 				if success then
 					table.insert(self.enabledBagSystems, integration)
@@ -935,12 +949,9 @@ function addon:OnDisable()
 	if self.enabledBagSystems then
 		for _, integration in ipairs(self.enabledBagSystems) do
 			if integration.OnDisable then
-				local success, error =
-					pcall(
-					function()
-						integration:OnDisable()
-					end
-				)
+				local success, error = pcall(function()
+					integration:OnDisable()
+				end)
 
 				if not success then
 					Log('Error disabling bag system integration: ' .. tostring(error), 'error')

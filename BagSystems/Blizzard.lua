@@ -4,7 +4,7 @@ local Log = root.Log
 
 ---@class BlizzardIntegration
 local BlizzardIntegration = {
-	name = "Blizzard"
+	name = 'Blizzard',
 }
 
 -- Storage for our indicator frames
@@ -25,7 +25,7 @@ function BlizzardIntegration:AreBagsVisible()
 
 	-- Check individual container frames
 	for i = 1, NUM_CONTAINER_FRAMES or 13 do
-		local frame = _G["ContainerFrame" .. i]
+		local frame = _G['ContainerFrame' .. i]
 		if frame and frame:IsVisible() then
 			return true
 		end
@@ -85,7 +85,7 @@ local function UpdateSlotIndicator(button)
 	local itemDetails = {
 		itemLink = itemLink,
 		bagID = bagID,
-		slotID = slotID
+		slotID = slotID,
 	}
 
 	-- Get or create indicator frame
@@ -108,19 +108,19 @@ local function HookBagSlot(button)
 
 	-- Hook the button's update function
 	if button.UpdateTooltip then
-		hooksecurefunc(button, "UpdateTooltip", function()
+		hooksecurefunc(button, 'UpdateTooltip', function()
 			UpdateSlotIndicator(button)
 		end)
 	end
 
 	-- Also hook when items change
-	local originalOnEvent = button:GetScript("OnEvent")
-	button:SetScript("OnEvent", function(self, event, ...)
+	local originalOnEvent = button:GetScript('OnEvent')
+	button:SetScript('OnEvent', function(self, event, ...)
 		if originalOnEvent then
 			originalOnEvent(self, event, ...)
 		end
 
-		if event == "BAG_UPDATE_DELAYED" or event == "ITEM_LOCK_CHANGED" then
+		if event == 'BAG_UPDATE_DELAYED' or event == 'ITEM_LOCK_CHANGED' then
 			UpdateSlotIndicator(self)
 		end
 	end)
@@ -144,7 +144,7 @@ local function HookAllBagSlots()
 
 	-- Hook individual container frames
 	for bagFrameIndex = 1, NUM_CONTAINER_FRAMES or 13 do
-		local containerFrame = _G["ContainerFrame" .. bagFrameIndex]
+		local containerFrame = _G['ContainerFrame' .. bagFrameIndex]
 		if containerFrame and containerFrame:IsVisible() then
 			-- Use the frame's item button pool if available
 			if containerFrame.Items then
@@ -157,7 +157,7 @@ local function HookAllBagSlots()
 				-- Fallback to traditional item button naming
 				local frameSize = C_Container.GetContainerNumSlots(containerFrame:GetID()) or 0
 				for slotIndex = 1, frameSize do
-					local itemButton = _G["ContainerFrame" .. bagFrameIndex .. "Item" .. slotIndex]
+					local itemButton = _G['ContainerFrame' .. bagFrameIndex .. 'Item' .. slotIndex]
 					if itemButton then
 						HookBagSlot(itemButton)
 					end
@@ -170,7 +170,7 @@ local function HookAllBagSlots()
 	if BankFrame and BankFrame:IsVisible() then
 		-- Hook generic bank slots
 		for i = 1, NUM_BANKGENERIC_SLOTS or 28 do
-			local button = _G["BankFrameItem" .. i]
+			local button = _G['BankFrameItem' .. i]
 			if button then
 				HookBagSlot(button)
 			end
@@ -179,7 +179,7 @@ local function HookAllBagSlots()
 		-- Hook reagent bank slots if available
 		if ReagentBankFrame then
 			for i = 1, REAGENTBANK_MAX_SLOTS or 98 do
-				local button = _G["ReagentBankFrameItem" .. i]
+				local button = _G['ReagentBankFrameItem' .. i]
 				if button then
 					HookBagSlot(button)
 				end
@@ -219,12 +219,12 @@ function BlizzardIntegration:OnEnable()
 	Log('Blizzard bags integration enabling')
 
 	-- Register for bag update events
-	addon:RegisterEvent("BAG_UPDATE_DELAYED", OnBagUpdate)
-	addon:RegisterEvent("BAG_UPDATE", OnBagUpdate)
-	addon:RegisterEvent("ITEM_LOCK_CHANGED", OnBagUpdate)
+	addon:RegisterEvent('BAG_UPDATE_DELAYED', OnBagUpdate)
+	addon:RegisterEvent('BAG_UPDATE', OnBagUpdate)
+	addon:RegisterEvent('ITEM_LOCK_CHANGED', OnBagUpdate)
 
 	-- Register for container frame events
-	addon:RegisterEvent("USE_COMBINED_BAGS_CHANGED", function()
+	addon:RegisterEvent('USE_COMBINED_BAGS_CHANGED', function()
 		addon:ScheduleTimer(function()
 			HookAllBagSlots()
 			RefreshAllIndicators()
@@ -232,14 +232,13 @@ function BlizzardIntegration:OnEnable()
 	end)
 
 	-- Bank events
-	addon:RegisterEvent("BANKFRAME_OPENED", function()
+	addon:RegisterEvent('BANKFRAME_OPENED', function()
 		addon:ScheduleTimer(HookAllBagSlots, 0.1)
 	end)
-	addon:RegisterEvent("BANKFRAME_CLOSED", function()
+	addon:RegisterEvent('BANKFRAME_CLOSED', function()
 		-- Clean up bank indicators
 		for button, frame in pairs(indicatorFrames) do
-			if button:GetParent() and button:GetParent():GetName() and
-			   string.find(button:GetParent():GetName(), "BankFrame") then
+			if button:GetParent() and button:GetParent():GetName() and string.find(button:GetParent():GetName(), 'BankFrame') then
 				root.Animation.CleanupAnimation(frame)
 				frame:Hide()
 			end
@@ -248,7 +247,7 @@ function BlizzardIntegration:OnEnable()
 
 	-- Hook container frame show/hide events
 	if ContainerFrameCombinedBags then
-		ContainerFrameCombinedBags:HookScript("OnShow", function()
+		ContainerFrameCombinedBags:HookScript('OnShow', function()
 			Log('Combined bags frame shown', 'debug')
 			addon:ScheduleTimer(function()
 				HookAllBagSlots()
@@ -257,7 +256,7 @@ function BlizzardIntegration:OnEnable()
 			end, 0.1)
 		end)
 
-		ContainerFrameCombinedBags:HookScript("OnHide", function()
+		ContainerFrameCombinedBags:HookScript('OnHide', function()
 			Log('Combined bags frame hidden', 'debug')
 			root.Animation.StopGlobalTimer()
 		end)
@@ -300,12 +299,12 @@ function BlizzardIntegration:OnDisable()
 	hookedButtons = {}
 
 	-- Unregister events
-	addon:UnregisterEvent("BAG_UPDATE_DELAYED")
-	addon:UnregisterEvent("BAG_UPDATE")
-	addon:UnregisterEvent("ITEM_LOCK_CHANGED")
-	addon:UnregisterEvent("USE_COMBINED_BAGS_CHANGED")
-	addon:UnregisterEvent("BANKFRAME_OPENED")
-	addon:UnregisterEvent("BANKFRAME_CLOSED")
+	addon:UnregisterEvent('BAG_UPDATE_DELAYED')
+	addon:UnregisterEvent('BAG_UPDATE')
+	addon:UnregisterEvent('ITEM_LOCK_CHANGED')
+	addon:UnregisterEvent('USE_COMBINED_BAGS_CHANGED')
+	addon:UnregisterEvent('BANKFRAME_OPENED')
+	addon:UnregisterEvent('BANKFRAME_CLOSED')
 
 	root.Animation.StopGlobalTimer()
 end
@@ -314,4 +313,4 @@ end
 BlizzardIntegration.RefreshAllCornerWidgets = RefreshAllIndicators
 
 -- Register this bag system
-addon:RegisterBagSystem("blizzard", BlizzardIntegration)
+addon:RegisterBagSystem('blizzard', BlizzardIntegration)

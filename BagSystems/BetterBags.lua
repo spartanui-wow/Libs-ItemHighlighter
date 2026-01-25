@@ -4,7 +4,7 @@ local Log = root.Log
 
 ---@class BetterBagsIntegration
 local BetterBagsIntegration = {
-	name = 'BetterBags'
+	name = 'BetterBags',
 }
 
 -- Module references for BetterBags integration
@@ -88,7 +88,7 @@ function BetterBagsIntegration:AreBagsVisible()
 
 	if success and betterBagsAddon and betterBagsAddon.Bags then
 		-- Check if Backpack bag is visible (calls IsShown() method)
-		if betterBagsAddon.Bags.Backpack and type(betterBagsAddon.Bags.Backpack.IsShown) == "function" then
+		if betterBagsAddon.Bags.Backpack and type(betterBagsAddon.Bags.Backpack.IsShown) == 'function' then
 			local backpackVisible = betterBagsAddon.Bags.Backpack:IsShown()
 			Log('BetterBags Backpack visibility: ' .. tostring(backpackVisible), 'info')
 			if backpackVisible then
@@ -99,7 +99,7 @@ function BetterBagsIntegration:AreBagsVisible()
 		end
 
 		-- Check if Bank bag is visible (calls IsShown() method)
-		if betterBagsAddon.Bags.Bank and type(betterBagsAddon.Bags.Bank.IsShown) == "function" then
+		if betterBagsAddon.Bags.Bank and type(betterBagsAddon.Bags.Bank.IsShown) == 'function' then
 			local bankVisible = betterBagsAddon.Bags.Bank:IsShown()
 			Log('BetterBags Bank visibility: ' .. tostring(bankVisible), 'info')
 			if bankVisible then
@@ -120,7 +120,7 @@ local itemButtonWidgets = {}
 -- Helper function to generate category color prefix
 local function GetCategoryPrefix()
 	if not addon.DB or not addon.DB.BetterBags_CategoryColor then
-		return '|cff2beefd'  -- Default cyan
+		return '|cff2beefd' -- Default cyan
 	end
 	local color = addon.DB.BetterBags_CategoryColor
 	local r = math.floor(color.r * 255 + 0.5)
@@ -148,7 +148,7 @@ local function BetterBagsCategoryFilter(data)
 	local itemDetails = {
 		itemLink = itemLink,
 		bagID = data.bagid,
-		slotID = data.slotid
+		slotID = data.slotid,
 	}
 
 	-- Get category from enhanced CheckItem function
@@ -186,8 +186,8 @@ local function UpdateHighlightWidget(itemButton, itemData)
 	-- Convert BetterBags itemData to our expected format
 	local itemDetails = {
 		itemLink = itemData.itemLink,
-		bagID = itemData.bagID or itemData.bagid,  -- Handle both cases
-		slotID = itemData.slotID or itemData.slotid  -- Handle both cases
+		bagID = itemData.bagID or itemData.bagid, -- Handle both cases
+		slotID = itemData.slotID or itemData.slotid, -- Handle both cases
 	}
 
 	root.Animation.UpdateIndicatorFrame(widget, itemDetails)
@@ -209,7 +209,7 @@ local function HookBetterBagsItemButtons()
 			hooksecurefunc(ItemFrame.itemProto, 'SetItem', function(self, ctx, slotkey)
 				if self and slotkey and (addon.DB.ShowGlow or addon.DB.ShowIndicator) then
 					-- BetterBags uses underscore format: "bagID_slotID"
-					local bagID, slotID = slotkey:match("^(%d+)_(%d+)$")
+					local bagID, slotID = slotkey:match('^(%d+)_(%d+)$')
 					if bagID and slotID then
 						local numBagID = tonumber(bagID)
 						local numSlotID = tonumber(slotID)
@@ -220,7 +220,7 @@ local function HookBetterBagsItemButtons()
 							local itemData = {
 								bagID = numBagID,
 								slotID = numSlotID,
-								itemLink = itemLink
+								itemLink = itemLink,
 							}
 							UpdateHighlightWidget(self.button or self.frame, itemData)
 						end
@@ -245,7 +245,7 @@ local function HookBetterBagsItemButtons()
 						local itemData = {
 							bagID = data.bagid,
 							slotID = data.slotid,
-							itemLink = itemLink
+							itemLink = itemLink,
 						}
 						UpdateHighlightWidget(self.button or self.frame, itemData)
 					end
@@ -299,7 +299,7 @@ local function RefreshAllWidgets()
 
 		-- Also try to trigger a general bag update
 		addon:ScheduleTimer(function()
-			addon:SendMessage("BAG_UPDATE_DELAYED")
+			addon:SendMessage('BAG_UPDATE_DELAYED')
 		end, 0.1)
 	end, 0.1)
 end
@@ -327,9 +327,9 @@ function BetterBagsIntegration:OnEnable()
 				description = {
 					type = 'description',
 					name = 'Category system is configured in the main Item Highlighter options (/libsih).\n\nYou can enable/disable the category system and customize category colors there.',
-					order = 1
-				}
-			}
+					order = 1,
+				},
+			},
 		}
 		configModule:AddPluginConfig("Lib's Item Highlighter", pluginOptions)
 		Log('Registered BetterBags plugin config', 'info')
@@ -353,7 +353,7 @@ function BetterBagsIntegration:OnEnable()
 	end
 
 	-- Hook into BetterBags events for bag visibility changes
-	addon:RegisterMessage("BAG_UPDATE_DELAYED", function()
+	addon:RegisterMessage('BAG_UPDATE_DELAYED', function()
 		if self:AreBagsVisible() then
 			Log('Bags are visible - starting timer')
 			root.Animation.StartGlobalTimer()
@@ -381,21 +381,31 @@ function BetterBagsIntegration:OnEnable()
 	end
 
 	-- Hook the same functions that might trigger BetterBags
-	hooksecurefunc('ToggleBackpack', function() OnBagToggle('ToggleBackpack') end)
-	hooksecurefunc('ToggleBag', function() OnBagToggle('ToggleBag') end)
-	hooksecurefunc('ToggleAllBags', function() OnBagToggle('ToggleAllBags') end)
+	hooksecurefunc('ToggleBackpack', function()
+		OnBagToggle('ToggleBackpack')
+	end)
+	hooksecurefunc('ToggleBag', function()
+		OnBagToggle('ToggleBag')
+	end)
+	hooksecurefunc('ToggleAllBags', function()
+		OnBagToggle('ToggleAllBags')
+	end)
 
 	-- Hook BetterBags specific functions (reuse existing betterBagsAddon)
 	if success and betterBagsAddon then
 		-- Hook the main BetterBags toggle method
 		if betterBagsAddon.ToggleAllBags then
-			hooksecurefunc(betterBagsAddon, 'ToggleAllBags', function() OnBagToggle('BetterBags-ToggleAllBags') end)
+			hooksecurefunc(betterBagsAddon, 'ToggleAllBags', function()
+				OnBagToggle('BetterBags-ToggleAllBags')
+			end)
 			Log('Hooked BetterBags ToggleAllBags method')
 		end
 
 		-- Hook global BetterBags toggle function if it exists
 		if _G.BetterBags_ToggleBags then
-			hooksecurefunc('BetterBags_ToggleBags', function() OnBagToggle('BetterBags_ToggleBags') end)
+			hooksecurefunc('BetterBags_ToggleBags', function()
+				OnBagToggle('BetterBags_ToggleBags')
+			end)
 			Log('Hooked BetterBags_ToggleBags global function')
 		end
 	end

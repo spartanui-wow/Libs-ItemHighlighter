@@ -4,7 +4,7 @@ local Log = root.Log
 
 ---@class ElvUIIntegration
 local ElvUIIntegration = {
-	name = 'ElvUI'
+	name = 'ElvUI',
 }
 
 -- Check if ElvUI is available
@@ -31,7 +31,7 @@ function ElvUIIntegration:AreBagsVisible()
 	-- Check ElvUI bag frames
 	local frames = {
 		B.BagFrame,
-		B.BankFrame
+		B.BankFrame,
 	}
 
 	for _, frame in ipairs(frames) do
@@ -82,7 +82,7 @@ local function UpdateHighlightWidget(itemButton)
 		local itemDetails = {
 			itemLink = itemLink,
 			bagID = bagID,
-			slotID = slotID
+			slotID = slotID,
 		}
 
 		root.Animation.UpdateIndicatorFrame(widget, itemDetails)
@@ -145,7 +145,7 @@ local function HookElvUIBagSystem()
 								local itemData = {
 									bagID = bagId,
 									slotID = slotId,
-									itemLink = itemLink
+									itemLink = itemLink,
 								}
 								UpdateHighlightWidget(slot, itemData)
 							end
@@ -186,7 +186,7 @@ local function HookElvUIBagSystem()
 									local itemData = {
 										bagID = bagId,
 										slotID = slotId,
-										itemLink = itemLink
+										itemLink = itemLink,
 									}
 									UpdateHighlightWidget(slot, itemData)
 								end
@@ -267,7 +267,7 @@ local function RefreshAllWidgets()
 
 		-- Also trigger a general bag update
 		addon:ScheduleTimer(function()
-			addon:SendMessage("BAG_UPDATE_DELAYED")
+			addon:SendMessage('BAG_UPDATE_DELAYED')
 		end, 0.1)
 	end, 0.1)
 end
@@ -284,7 +284,7 @@ function ElvUIIntegration:OnEnable()
 	HookElvUIBagSystem()
 
 	-- Hook into bag events for visibility changes
-	addon:RegisterMessage("BAG_UPDATE_DELAYED", function()
+	addon:RegisterMessage('BAG_UPDATE_DELAYED', function()
 		if self:AreBagsVisible() then
 			Log('Bags are visible - starting timer')
 			root.Animation.StartGlobalTimer()
