@@ -818,11 +818,11 @@ root.CheckItem = CheckItem
 root.CheckItemWithCategory = CheckItemWithCategory
 root.GetItemStatistics = GetItemStatistics
 
--- Bag system registry
-local bagSystems = {}
+-- Bag system registry - exposed as addon.BagSystems for global access
+addon.BagSystems = {}
 
 function addon:RegisterBagSystem(name, integration)
-	bagSystems[name] = integration
+	self.BagSystems[name] = integration
 	Log('Registered bag system: ' .. name)
 end
 
@@ -832,7 +832,7 @@ function addon:GetAllAvailableBagSystems()
 	Log('Scanning for all available bag systems...')
 
 	-- Check all registered systems - integrate with everything that's available
-	for name, integration in pairs(bagSystems) do
+	for name, integration in pairs(self.BagSystems) do
 		if integration and integration.IsAvailable and integration:IsAvailable() then
 			Log('Found available bag system: ' .. name)
 			table.insert(availableSystems, { name = name, integration = integration })
@@ -852,6 +852,14 @@ function addon:GetAllAvailableBagSystems()
 	return availableSystems
 end
 
+function addon:IsBagSystemAvailable(name)
+	local integration = self.BagSystems[name]
+	if integration and integration.IsAvailable then
+		return integration:IsAvailable()
+	end
+	return false
+end
+
 -- Legacy function for compatibility - now returns first available system or nil
 function addon:GetActiveBagSystem()
 	local systemName = self.DB.BagSystem
@@ -862,7 +870,7 @@ function addon:GetActiveBagSystem()
 	else
 		-- Manual selection - respect user's choice for single system
 		Log('Using manually selected bag system: ' .. systemName)
-		return bagSystems[systemName]
+		return self.BagSystems[systemName]
 	end
 end
 

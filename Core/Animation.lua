@@ -231,8 +231,21 @@ local function CreateIndicatorFrame(parent)
 		return globalWidgetRegistry[parent].widgetFrame
 	end
 
-	local frame = CreateFrame('Frame', 'LibsIH_IndicatorFrame' .. count, parent)
+	-- Generate frame name based on parent name if available
+	local frameName
+	local parentName = parent:GetName()
+	if parentName then
+		-- If parent has a name, append "LIH" to it for easy identification
+		frameName = parentName .. 'LIH'
+		Log('Creating indicator frame with name: ' .. frameName, 'debug')
+	else
+		-- Fallback to counter-based naming if parent is anonymous
+		frameName = 'LibsIH_IndicatorFrame' .. count
+		Log('Creating indicator frame with fallback name: ' .. frameName, 'debug')
+	end
 	count = count + 1
+
+	local frame = CreateFrame('Frame', frameName, parent)
 
 	-- Register this widget in the global registry
 	globalWidgetRegistry[parent] = {
@@ -249,26 +262,37 @@ local function CreateIndicatorFrame(parent)
 	-- Anchor the frame to completely cover the parent item button
 	frame:SetAllPoints(parent)
 
+	-- Set frame strata and level to ensure it's visible above the item button
+	-- Use HIGH strata to be above most UI elements
+	frame:SetFrameStrata('HIGH')
+	-- Set frame level higher than parent to ensure we're on top
+	local parentLevel = parent:GetFrameLevel()
+	frame:SetFrameLevel(parentLevel + 10)
+	Log('Created frame ' .. frameName .. ' with strata HIGH and level ' .. (parentLevel + 10), 'info')
+
 	-- Create two textures for crossfading glow animation
-	local texture1 = frame:CreateTexture(nil, 'OVERLAY')
+	-- Use OVERLAY layer with high sublevel to ensure visibility
+	local texture1 = frame:CreateTexture(nil, 'OVERLAY', nil, 7)
 	texture1:SetAllPoints(frame)
 	texture1:SetAtlas('bags-glow-blue')
 	texture1:SetAlpha(1) -- Start fully visible for animation
 	texture1:Hide() -- Initially hidden, shown when glow is enabled
 
-	local texture2 = frame:CreateTexture(nil, 'OVERLAY')
+	local texture2 = frame:CreateTexture(nil, 'OVERLAY', nil, 7)
 	texture2:SetAllPoints(frame)
 	texture2:SetAtlas('bags-glow-green')
 	texture2:SetAlpha(0) -- Start invisible for animation
 	texture2:Hide() -- Initially hidden, shown when glow is enabled
 
 	-- Static indicator icon texture
-	local texture3 = frame:CreateTexture(nil, 'OVERLAY')
+	local texture3 = frame:CreateTexture(nil, 'OVERLAY', nil, 7)
 	texture3:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', 0, 0)
 	texture3:SetAtlas('ShipMissionIcon-Treasure-Map')
 	texture3:SetSize(20, 20)
 	texture3:SetAlpha(1) -- Always full alpha when visible
 	texture3:Hide() -- Initially hidden, shown when indicator is enabled
+
+	Log('Created textures on OVERLAY layer, sublevel 7 for frame: ' .. frameName, 'debug')
 
 	-- Store all textures
 	frame.texture1 = texture1
@@ -284,6 +308,9 @@ end
 ---@param itemDetails table Item details
 ---@return boolean visible True if indicator should be visible
 local function UpdateIndicatorFrame(frame, itemDetails)
+	local frameName = frame:GetName() or 'anonymous'
+	Log('UpdateIndicatorFrame called for frame: ' .. frameName, 'info')
+
 	-- Check if any indicator features are enabled
 	if not addon.DB.ShowGlow and not addon.DB.ShowIndicator then
 		Log('All indicator features disabled, hiding widget')
@@ -292,29 +319,36 @@ local function UpdateIndicatorFrame(frame, itemDetails)
 		return false
 	end
 
+	Log('ShowGlow: ' .. tostring(addon.DB.ShowGlow) .. ', ShowIndicator: ' .. tostring(addon.DB.ShowIndicator), 'info')
+
 	if not itemDetails or not itemDetails.itemLink then
 		Log('No itemDetails or itemLink provided')
 		CleanupAnimation(frame)
 		return false
 	end
 
-	Log('Checking item: ' .. (itemDetails.itemLink or 'unknown'), 'debug')
+	Log('Checking item: ' .. (itemDetails.itemLink or 'unknown'), 'info')
 	local isOpenable = root.CheckItem(itemDetails)
+	Log('Is item openable? ' .. tostring(isOpenable), 'info')
+
 	if isOpenable then
-		Log('Item is openable, configuring display elements', 'debug')
+		Log('Item is openable, configuring display elements for frame: ' .. frameName, 'info')
 
 		-- Always show frame if any feature is enabled for openable items
 		frame:Show()
+		Log('Frame:Show() called on: ' .. frameName, 'info')
 
 		-- Handle glow animation (texture1 and texture2)
 		if addon.DB.ShowGlow then
-			Log('Showing glow animation', 'debug')
+			Log('Showing glow animation for frame: ' .. frameName, 'info')
 			-- Show glow textures
 			if frame.texture1 then
 				frame.texture1:Show()
+				Log('Texture1 (blue) shown - Alpha: ' .. frame.texture1:GetAlpha() .. ', IsShown: ' .. tostring(frame.texture1:IsShown()), 'info')
 			end
 			if frame.texture2 then
 				frame.texture2:Show()
+				Log('Texture2 (green) shown - Alpha: ' .. frame.texture2:GetAlpha() .. ', IsShown: ' .. tostring(frame.texture2:IsShown()), 'info')
 			end
 
 			-- Ensure animation is running for glow effect

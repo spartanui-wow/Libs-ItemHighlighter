@@ -278,7 +278,7 @@ local function GetOptions()
 						end,
 						disabled = function()
 							-- Only available when BetterBags is detected
-							return addon.BagSystems['betterbags'] == nil or not addon.BagSystems['betterbags']:IsAvailable()
+							return not addon.BagSystems['betterbags'] or not addon.BagSystems['betterbags']:IsAvailable()
 						end,
 					},
 					betterBagsCategoryColor = {
@@ -295,7 +295,7 @@ local function GetOptions()
 							addon.DB.BetterBags_CategoryColor = { r = r, g = g, b = b }
 						end,
 						disabled = function()
-							return not addon.DB.BetterBags_EnableCategories or addon.BagSystems['betterbags'] == nil or not addon.BagSystems['betterbags']:IsAvailable()
+							return not addon.DB.BetterBags_EnableCategories or not addon.BagSystems['betterbags'] or not addon.BagSystems['betterbags']:IsAvailable()
 						end,
 					},
 					betterBagsNote = {

@@ -10,6 +10,7 @@ local BetterBagsIntegration = {
 -- Module references for BetterBags integration
 local categoriesModule = nil
 local configModule = nil
+local themesModule = nil
 
 -- Check if BetterBags is available
 function BetterBagsIntegration:IsAvailable()
@@ -50,7 +51,7 @@ function BetterBagsIntegration:IsAvailable()
 		Log('BetterBags ItemFrame module test: ' .. tostring(moduleSuccess), 'info')
 
 		if moduleSuccess and itemFrame then
-			-- Also get Categories and Config modules for category system
+			-- Also get Categories, Config, and Themes modules for integration
 			local catSuccess, categories = pcall(function()
 				return betterBagsAddon:GetModule('Categories')
 			end)
@@ -65,6 +66,14 @@ function BetterBagsIntegration:IsAvailable()
 			if configSuccess and config then
 				configModule = config
 				Log('BetterBags Config module found', 'info')
+			end
+
+			local themesSuccess, themes = pcall(function()
+				return betterBagsAddon:GetModule('Themes')
+			end)
+			if themesSuccess and themes then
+				themesModule = themes
+				Log('BetterBags Themes module found', 'info')
 			end
 
 			Log('BetterBags is available and ready for integration', 'info')
@@ -195,6 +204,12 @@ end
 
 -- Function to hook into BetterBags item button creation and updates
 local function HookBetterBagsItemButtons()
+	-- Verify we have the Themes module cached
+	if not themesModule then
+		Log('BetterBags Themes module not available - cannot attach overlays', 'warning')
+		return
+	end
+
 	-- Try to hook the ItemFrame module that handles SetItem calls
 	local success, ItemFrame = pcall(function()
 		local betterBagsAddon = LibStub('AceAddon-3.0'):GetAddon('BetterBags')
@@ -204,7 +219,42 @@ local function HookBetterBagsItemButtons()
 	if success and ItemFrame and ItemFrame.itemProto then
 		Log('Found BetterBags ItemFrame module')
 
-		-- Hook the SetItem method which is called for all item button updates
+		-- Hook SetItemFromData which is the main method that updates items
+		if ItemFrame.itemProto.SetItemFromData then
+			hooksecurefunc(ItemFrame.itemProto, 'SetItemFromData', function(self, ctx, data)
+				if self and data and (addon.DB.ShowGlow or addon.DB.ShowIndicator) then
+					-- Get itemLink from container if not provided in data
+					local itemLink = data.itemLink
+					if not itemLink and data.bagid and data.slotid then
+						itemLink = C_Container.GetContainerItemLink(data.bagid, data.slotid)
+					end
+
+					-- Only process if we have an actual item
+					if itemLink then
+						-- Get the decoration button (the visible themed button)
+						local decoration = themesModule:GetItemButton(ctx, self)
+						if decoration then
+							local decorationName = decoration:GetName() or 'anonymous'
+							local selfButtonName = self.button and self.button:GetName() or 'anonymous'
+							Log('Decoration frame: ' .. decorationName .. ', Self.button: ' .. selfButtonName, 'info')
+
+							local itemData = {
+								bagID = data.bagid,
+								slotID = data.slotid,
+								itemLink = itemLink,
+							}
+							UpdateHighlightWidget(decoration, itemData)
+							Log('Updated highlight widget on decoration frame: ' .. decorationName, 'info')
+						else
+							Log('Failed to get decoration button', 'warning')
+						end
+					end
+				end
+			end)
+			Log('Hooked BetterBags ItemFrame SetItemFromData')
+		end
+
+		-- Hook the SetItem method which calls SetItemFromData internally
 		if ItemFrame.itemProto.SetItem then
 			hooksecurefunc(ItemFrame.itemProto, 'SetItem', function(self, ctx, slotkey)
 				if self and slotkey and (addon.DB.ShowGlow or addon.DB.ShowIndicator) then
@@ -217,41 +267,28 @@ local function HookBetterBagsItemButtons()
 
 						-- Only process if we have an actual item (itemLink exists)
 						if itemLink then
-							local itemData = {
-								bagID = numBagID,
-								slotID = numSlotID,
-								itemLink = itemLink,
-							}
-							UpdateHighlightWidget(self.button or self.frame, itemData)
+							-- Get the decoration button (the visible themed button)
+							local decoration = themesModule:GetItemButton(ctx, self)
+							if decoration then
+								local decorationName = decoration:GetName() or 'anonymous'
+								local selfButtonName = self.button and self.button:GetName() or 'anonymous'
+								Log('SetItem - Decoration frame: ' .. decorationName .. ', Self.button: ' .. selfButtonName, 'info')
+
+								local itemData = {
+									bagID = numBagID,
+									slotID = numSlotID,
+									itemLink = itemLink,
+								}
+								UpdateHighlightWidget(decoration, itemData)
+								Log('Updated highlight widget on decoration frame from SetItem: ' .. decorationName, 'info')
+							else
+								Log('Failed to get decoration button from SetItem', 'warning')
+							end
 						end
 					end
 				end
 			end)
 			Log('Hooked BetterBags ItemFrame SetItem')
-		end
-
-		-- Also hook SetItemFromData for completeness
-		if ItemFrame.itemProto.SetItemFromData then
-			hooksecurefunc(ItemFrame.itemProto, 'SetItemFromData', function(self, ctx, data)
-				if self and data and (addon.DB.ShowGlow or addon.DB.ShowIndicator) then
-					-- Get itemLink from container if not provided in data
-					local itemLink = data.itemLink
-					if not itemLink and data.bagid and data.slotid then
-						itemLink = C_Container.GetContainerItemLink(data.bagid, data.slotid)
-					end
-
-					-- Only process if we have an actual item
-					if itemLink then
-						local itemData = {
-							bagID = data.bagid,
-							slotID = data.slotid,
-							itemLink = itemLink,
-						}
-						UpdateHighlightWidget(self.button or self.frame, itemData)
-					end
-				end
-			end)
-			Log('Hooked BetterBags ItemFrame SetItemFromData')
 		end
 	else
 		Log('Failed to find BetterBags ItemFrame module', 'warning')
