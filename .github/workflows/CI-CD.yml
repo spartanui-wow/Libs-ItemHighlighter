@@ -1,0 +1,44 @@
+name: CI/CD
+
+on:
+  push:
+    tags: ["**"]
+    branches: ["main", "master", "develop"]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      CF_API_KEY: ${{ secrets.CF_API_KEY }}
+      WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }}
+      GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Clone project
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Smart Changelog with AI Summaries
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          AI_PROVIDER: gemini
+          GITHUB_REF: ${{ github.ref }}
+        run: |
+          chmod +x .github/scripts/generate-changelog.sh
+          .github/scripts/generate-changelog.sh CHANGELOG.md
+
+      - name: Add Changelog to Run Summary
+        run: cat CHANGELOG.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Package and release
+        uses: BigWigsMods/packager@master
+
+      - name: Send Discord Release Notification
+        if: success() && startsWith(github.ref, 'refs/tags/')
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          GITHUB_REF: ${{ github.ref }}
+        run: |
+          chmod +x .github/scripts/send-discord-notification.sh
+          .github/scripts/send-discord-notification.sh CHANGELOG.md
