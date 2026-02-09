@@ -1,6 +1,9 @@
 ignore:
   - "*.md"
   - "*.definition.lua"
+  - .pkgmeta-betterbags
+  - BetterBags-Openable.toc
+  - Icon.tga
 
 enable-nolib-creation: no
 

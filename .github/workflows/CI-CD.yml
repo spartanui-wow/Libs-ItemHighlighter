@@ -31,8 +31,13 @@ jobs:
       - name: Add Changelog to Run Summary
         run: cat CHANGELOG.md >> $GITHUB_STEP_SUMMARY
 
-      - name: Package and release
+      - name: Package and release (Libs-ItemHighlighter)
         uses: BigWigsMods/packager@master
+
+      - name: Package and release (BetterBags-Openable)
+        uses: BigWigsMods/packager@master
+        with:
+          args: -m .pkgmeta-betterbags -p 1021681 -a aNevMb62
 
       - name: Send Discord Release Notification
         if: success() && startsWith(github.ref, 'refs/tags/')

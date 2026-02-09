@@ -1,0 +1,18 @@
+package-as: BetterBags-Openable
+
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
+
+enable-nolib-creation: no
+
+ignore:
+  - "*.md"
+  - "*.definition.lua"
+  - .pkgmeta
+  - .addon-release.yml
+  - .stylua.toml
+  - .styluaignore
+  - .gitignore
+  - Logo-Icon.tga
+  - Libs-ItemHighlighter.toc

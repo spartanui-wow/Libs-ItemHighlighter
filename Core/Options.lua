@@ -219,7 +219,7 @@ end
 -- AceOptions Configuration
 local function GetOptions()
 	return {
-		name = "Lib's - Item Highlighter",
+		name = root.displayName,
 		type = 'group',
 		childGroups = 'tab',
 		args = {
@@ -447,7 +447,7 @@ local function GetOptions()
 							local stats = root.GetItemStatistics()
 
 							-- Build formatted output
-							local output = "|cff2beefdLib's - Item Highlighter: Item Statistics|r\n\n"
+							local output = '|cff2beefd' .. root.displayName .. ': Item Statistics|r\n\n'
 							local totalCount = 0
 
 							-- Sort categories alphabetically for consistent display
@@ -502,7 +502,7 @@ local function GetOptions()
 							addon.GlobalDB.itemCache.notOpenable = {}
 
 							Log('Cache reset: cleared ' .. openableCount .. ' openable items and ' .. notOpenableCount .. ' not openable items')
-							print("Lib's - Item Highlighter: Cache reset - cleared " .. (openableCount + notOpenableCount) .. ' cached items')
+							print(root.displayName .. ': Cache reset - cleared ' .. (openableCount + notOpenableCount) .. ' cached items')
 
 							-- Refresh widgets to re-evaluate items
 							local bagSystem = addon:GetActiveBagSystem()
@@ -738,8 +738,9 @@ end
 
 function addon:SetupOptions()
 	local optionsTable = GetOptions()
-	LibStub('AceConfig-3.0'):RegisterOptionsTable('LibsItemHighlighter', optionsTable)
-	LibStub('AceConfigDialog-3.0'):AddToBlizOptions('LibsItemHighlighter', "Lib's - Item Highlighter")
+	local optionsKey = addonName:gsub('%-', '')
+	LibStub('AceConfig-3.0'):RegisterOptionsTable(optionsKey, optionsTable)
+	LibStub('AceConfigDialog-3.0'):AddToBlizOptions(optionsKey, root.displayName)
 	Log('Options panel registered with Blizzard Interface')
 
 	-- Initialize the custom lists
@@ -749,19 +750,20 @@ function addon:SetupOptions()
 	-- Register slash commands
 	SLASH_LIBSITEMHIGHLIGHTER1 = '/libsih'
 	SLASH_LIBSITEMHIGHLIGHTER2 = '/itemhighlighter'
+	SLASH_LIBSITEMHIGHLIGHTER3 = '/openable'
 	SlashCmdList['LIBSITEMHIGHLIGHTER'] = function(msg)
 		if msg == 'profile' then
 			if addon.ProfileManager then
 				addon.ProfileManager:ShowWindow()
 			else
-				print("Lib's - Item Highlighter: ProfileManager not available (LibsAddonTools required)")
+				print(root.displayName .. ': ProfileManager not available (LibsAddonTools required)')
 			end
 		elseif msg == 'stats' or msg == 'statistics' then
 			-- Display item statistics
 			local stats = root.GetItemStatistics()
 
 			-- Build formatted output
-			local output = "|cff2beefdLib's - Item Highlighter: Item Statistics|r\n\n"
+			local output = '|cff2beefd' .. root.displayName .. ': Item Statistics|r\n\n'
 			local totalCount = 0
 
 			-- Sort categories alphabetically for consistent display
@@ -788,7 +790,7 @@ function addon:SetupOptions()
 
 			print(output)
 		else
-			Settings.OpenToCategory("Lib's - Item Highlighter")
+			Settings.OpenToCategory(root.displayName)
 		end
 	end
 
@@ -799,7 +801,7 @@ function addon:SetupOptions()
 			if msg == 'export' then
 				local exported = addon.ProfileManager:ExportProfile('text')
 				if exported then
-					print("Lib's - Item Highlighter profile exported:")
+					print(root.displayName .. ' profile exported:')
 					print(exported)
 				else
 					print('Failed to export profile')

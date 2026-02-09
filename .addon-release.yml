@@ -4,3 +4,6 @@ urls:
   curseforge: "https://www.curseforge.com/wow/addons/libs-itemhighlighter"
   wago: "https://addons.wago.io/addons/b6mb29KP"
   discord: "https://discord.gg/Qc9TRBv"
+
+# Secondary addon identity (BetterBags-Openable) is packaged via
+# .pkgmeta-betterbags with -p 1021681 -a aNevMb62 in CI-CD.yml

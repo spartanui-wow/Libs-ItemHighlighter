@@ -1,5 +1,22 @@
 local addonName, root = ... --[[@type string, table]]
 
+-- Conflict guard: Libs-ItemHighlighter is the primary identity
+-- If both are installed, only one should run
+if addonName == 'BetterBags-Openable' then
+	local libsIHLoaded = C_AddOns.IsAddOnLoaded('Libs-ItemHighlighter')
+	if libsIHLoaded then
+		return -- Libs-ItemHighlighter already running, defer to it
+	end
+end
+
+-- Display name adapts based on which addon identity is running
+local DISPLAY_NAMES = {
+	['Libs-ItemHighlighter'] = "Lib's - Item Highlighter",
+	['BetterBags-Openable'] = 'BetterBags - Openable Items',
+}
+local displayName = DISPLAY_NAMES[addonName] or addonName
+root.displayName = displayName
+
 -- Type definitions are located in LibsIH.definition.lua (not packaged)
 
 ---@class LibsIHCore
@@ -80,7 +97,7 @@ local logger = nil
 local function InitializeLibATLogger()
 	if LibAT and LibAT.Logger and LibAT.Logger.RegisterAddon then
 		-- Register with LibAT Logger for proper external addon integration
-		logger = LibAT.Logger.RegisterAddon("Lib's - Item Highlighter")
+		logger = LibAT.Logger.RegisterAddon(displayName)
 		return true
 	end
 	return false
@@ -925,7 +942,7 @@ function addon:OnInitialize()
 
 	-- Initialize Libs-AddonTools ProfileManager integration
 	if LibsAddonTools and LibsAddonTools.ProfileManager and LibsAddonTools.ProfileManager.IsProfileManagerAvailable() then
-		self.ProfileManager = LibsAddonTools.ProfileManager.RegisterAddon("Lib's - Item Highlighter", self.DataBase)
+		self.ProfileManager = LibsAddonTools.ProfileManager.RegisterAddon(displayName, self.DataBase)
 		Log('ProfileManager integration enabled - profile export/import available')
 	else
 		Log('LibsAddonTools not available - profile features disabled', 'info')

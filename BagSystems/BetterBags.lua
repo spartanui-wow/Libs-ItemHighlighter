@@ -358,17 +358,17 @@ function BetterBagsIntegration:OnEnable()
 	-- Register plugin config if available
 	if configModule then
 		local pluginOptions = {
-			name = "Lib's Item Highlighter",
+			name = root.displayName,
 			type = 'group',
 			args = {
 				description = {
 					type = 'description',
-					name = 'Category system is configured in the main Item Highlighter options (/libsih).\n\nYou can enable/disable the category system and customize category colors there.',
+					name = 'Category system is configured in the main addon options (/libsih or /openable).\n\nYou can enable/disable the category system and customize category colors there.',
 					order = 1,
 				},
 			},
 		}
-		configModule:AddPluginConfig("Lib's Item Highlighter", pluginOptions)
+		configModule:AddPluginConfig(root.displayName, pluginOptions)
 		Log('Registered BetterBags plugin config', 'info')
 	end
 
