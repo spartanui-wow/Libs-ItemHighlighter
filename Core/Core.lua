@@ -11,7 +11,7 @@ end
 
 -- Display name adapts based on which addon identity is running
 local DISPLAY_NAMES = {
-	['Libs-ItemHighlighter'] = "Lib's - Item Highlighter",
+	['Libs-ItemHighlighter'] = 'Libs - Item Highlighter',
 	['BetterBags-Openable'] = 'BetterBags - Openable Items',
 }
 local displayName = DISPLAY_NAMES[addonName] or addonName
