@@ -102,6 +102,9 @@ root.REP_USE_TEXT = REP_USE_TEXT
 -- Tooltip for item scanning
 local Tooltip = CreateFrame('GameTooltip', 'BagOpenableTooltip', nil, 'GameTooltipTemplate')
 
+-- Cache version: bump this when detection logic changes to auto-clear stale notOpenable cache
+local CACHE_VERSION = 2
+
 local SearchItems = {
 	'Open the container',
 	'Use: Open',
@@ -192,6 +195,9 @@ local function CheckItem(itemDetails)
 
 	local numLines = Tooltip:NumLines()
 	Log('Tooltip has ' .. numLines .. ' lines for item: ' .. itemLink, 'debug')
+
+	-- Track whether tooltip had enough data to trust a negative result
+	local tooltipHasData = numLines >= 2
 
 	for i = 1, numLines do
 		local leftLine = _G['BagOpenableTooltipTextLeft' .. i]
@@ -288,7 +294,13 @@ local function CheckItem(itemDetails)
 		end
 	end
 
-	return CacheOpenableResult(itemID, false)
+	-- Only cache negative results if the tooltip actually had data to scan
+	if tooltipHasData then
+		return CacheOpenableResult(itemID, false)
+	else
+		Log('Tooltip had no data for item ' .. tostring(itemID) .. ' - skipping negative cache', 'warning')
+		return false
+	end
 end
 
 ---Debug function to explain why an item is or isn't marked as openable
@@ -897,6 +909,19 @@ function addon:OnInitialize()
 	self.DB = self.DataBase.profile
 	self.GlobalDB = self.DataBase.global
 	Log('Database initialized with ShowGlow: ' .. tostring(self.DB.ShowGlow) .. ', ShowIndicator: ' .. tostring(self.DB.ShowIndicator))
+
+	-- Auto-clear stale notOpenable cache when detection logic changes
+	if self.GlobalDB.cacheVersion ~= CACHE_VERSION then
+		local oldCount = 0
+		if self.GlobalDB.itemCache and self.GlobalDB.itemCache.notOpenable then
+			for _ in pairs(self.GlobalDB.itemCache.notOpenable) do
+				oldCount = oldCount + 1
+			end
+			self.GlobalDB.itemCache.notOpenable = {}
+		end
+		self.GlobalDB.cacheVersion = CACHE_VERSION
+		Log('Cache version updated to ' .. CACHE_VERSION .. ' - cleared ' .. oldCount .. ' stale notOpenable entries')
+	end
 
 	-- Initialize Libs-AddonTools ProfileManager integration
 	if LibsAddonTools and LibsAddonTools.ProfileManager and LibsAddonTools.ProfileManager.IsProfileManagerAvailable() then
