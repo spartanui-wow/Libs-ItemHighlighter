@@ -38,6 +38,7 @@ local profile = {
 	FilterKnowledge = true,
 	FilterContainers = true,
 	FilterLockboxes = true,
+	FilterHousingDecor = true,
 	CreatableItem = true,
 	ShowGlow = true,
 	ShowIndicator = true,
@@ -120,7 +121,7 @@ root.REP_USE_TEXT = REP_USE_TEXT
 local Tooltip = CreateFrame('GameTooltip', 'BagOpenableTooltip', nil, 'GameTooltipTemplate')
 
 -- Cache version: bump this when detection logic changes to auto-clear stale notOpenable cache
-local CACHE_VERSION = 2
+local CACHE_VERSION = 3
 
 local SearchItems = {
 	'Open the container',
@@ -198,6 +199,10 @@ local function CheckItem(itemDetails)
 	end
 
 	if Consumable and itemSubType and string.find(itemSubType, 'Curio') and addon.DB.FilterCurios then
+		return CacheOpenableResult(itemID, true)
+	end
+
+	if addon.DB.FilterHousingDecor and itemType == 'Housing' then
 		return CacheOpenableResult(itemID, true)
 	end
 
@@ -363,6 +368,15 @@ function addon:DebugItemOpenability(itemID)
 		return
 	else
 		print('|cffFFFFFF SKIP:|r Not a Curio or FilterCurios disabled')
+	end
+
+	if itemType == 'Housing' then
+		if addon.DB.FilterHousingDecor then
+			print('|cff00FF00MATCH:|r Housing Decor item (FilterHousingDecor enabled)')
+			return
+		else
+			print('|cffFFAA00POTENTIAL:|r Housing Decor item found, but FilterHousingDecor is disabled')
+		end
 	end
 
 	-- Tooltip analysis
@@ -555,6 +569,7 @@ function addon:DebugItemOpenability(itemID)
 	print(string.format('FilterCurios: %s', addon.DB.FilterCurios and 'Enabled' or 'Disabled'))
 	print(string.format('FilterKnowledge: %s', addon.DB.FilterKnowledge and 'Enabled' or 'Disabled'))
 	print(string.format('FilterLockboxes: %s', addon.DB.FilterLockboxes and 'Enabled' or 'Disabled'))
+	print(string.format('FilterHousingDecor: %s', addon.DB.FilterHousingDecor and 'Enabled' or 'Disabled'))
 	print(string.format('FilterGenericUse: %s', addon.DB.FilterGenericUse and 'Enabled' or 'Disabled'))
 	print(string.format('CreatableItem: %s', addon.DB.CreatableItem and 'Enabled' or 'Disabled'))
 
@@ -667,6 +682,10 @@ local function CheckItemWithCategory(itemDetails)
 
 	if Consumable and itemSubType and string.find(itemSubType, 'Curio') and addon.DB.FilterCurios then
 		return 'Curios'
+	end
+
+	if addon.DB.FilterHousingDecor and itemType == 'Housing' then
+		return 'Housing Decor'
 	end
 
 	-- Tooltip scanning
@@ -792,6 +811,7 @@ local function GetItemStatistics()
 		['Containers'] = 0,
 		['Generic Use Items'] = 0,
 		["Delver's Bounty"] = 0,
+		['Housing Decor'] = 0,
 		['Whitelist Items'] = 0,
 	}
 

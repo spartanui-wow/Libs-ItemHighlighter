@@ -421,6 +421,12 @@ local function GetOptions()
 								desc = 'Highlight items that create class-specific gear',
 								order = 18,
 							},
+							FilterHousingDecor = {
+								type = 'toggle',
+								name = 'Housing Decor',
+								desc = 'Highlight housing decor items that can be added to your House Chest',
+								order = 18.5,
+							},
 							FilterGenericUse = {
 								type = 'toggle',
 								name = 'Generic Use Items',
