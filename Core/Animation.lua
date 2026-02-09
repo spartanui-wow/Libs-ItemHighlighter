@@ -321,9 +321,10 @@ local function UpdateIndicatorFrame(frame, itemDetails)
 
 	Log('ShowGlow: ' .. tostring(addon.DB.ShowGlow) .. ', ShowIndicator: ' .. tostring(addon.DB.ShowIndicator), 'info')
 
-	if not itemDetails or not itemDetails.itemLink then
-		Log('No itemDetails or itemLink provided')
+	if not itemDetails or not itemDetails.itemLink or itemDetails.itemLink == '' then
+		Log('No itemDetails or itemLink provided, hiding widget')
 		CleanupAnimation(frame)
+		frame:Hide()
 		return false
 	end
 
