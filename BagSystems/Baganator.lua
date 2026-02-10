@@ -45,10 +45,18 @@ end
 
 -- Baganator Corner Widget Functions
 local function OnCornerWidgetInit(itemButton)
-	return root.Animation.CreateIndicatorFrame(itemButton)
+	local parentName = itemButton.GetName and itemButton:GetName() or 'anonymous'
+	Log('[Baganator] OnCornerWidgetInit called for button: ' .. parentName, 'debug')
+	local frame = root.Animation.CreateIndicatorFrame(itemButton)
+	-- Ensure frame starts hidden until OnCornerWidgetUpdate explicitly shows it
+	frame:Hide()
+	return frame
 end
 
 local function OnCornerWidgetUpdate(cornerFrame, itemDetails)
+	local frameName = cornerFrame.GetName and cornerFrame:GetName() or 'anonymous'
+	local itemLink = itemDetails and itemDetails.itemLink or 'nil'
+	Log('[Baganator] OnCornerWidgetUpdate called for frame: ' .. frameName .. ', itemLink: ' .. tostring(itemLink), 'debug')
 	return root.Animation.UpdateIndicatorFrame(cornerFrame, itemDetails)
 end
 

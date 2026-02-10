@@ -300,6 +300,9 @@ local function CreateIndicatorFrame(parent)
 	frame.texture3 = texture3
 	frame.texture = texture3 -- For compatibility, use static texture
 
+	-- Start hidden - UpdateIndicatorFrame will show it when an openable item is found
+	frame:Hide()
+
 	return frame
 end
 
