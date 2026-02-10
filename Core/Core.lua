@@ -121,7 +121,7 @@ root.REP_USE_TEXT = REP_USE_TEXT
 local Tooltip = CreateFrame('GameTooltip', 'BagOpenableTooltip', nil, 'GameTooltipTemplate')
 
 -- Cache version: bump this when detection logic changes to auto-clear stale notOpenable cache
-local CACHE_VERSION = 3
+local CACHE_VERSION = 4
 
 local SearchItems = {
 	'Open the container',
@@ -187,9 +187,10 @@ local function CheckItem(itemDetails)
 	-- Quick check for common openable item types
 	local itemName, _, _, _, _, itemType, itemSubType = C_Item.GetItemInfo(itemLink)
 
-	-- Exclude all armor and weapon types from classification to prevent false positives
+	-- Exclude non-cosmetic armor and weapon types to prevent false positives
 	-- (e.g., items with "companion" in flavor text like Fangs of Ashamane)
-	if itemType == 'Weapon' or itemType == 'Armor' then
+	-- Cosmetic armor/weapons are allowed through for appearance detection
+	if (itemType == 'Weapon' or itemType == 'Armor') and itemSubType ~= 'Cosmetic' then
 		return CacheOpenableResult(itemID, false)
 	end
 	local Consumable = itemType == 'Consumable' or itemSubType == 'Consumables'
@@ -250,7 +251,7 @@ local function CheckItem(itemDetails)
 					return CacheOpenableResult(itemID, true)
 				end
 
-				if addon.DB.FilterAppearance and (string.find(LineText, ITEM_COSMETIC_LEARN) or string.find(LineText, GetLocaleString('Use: Collect the appearance'))) then
+				if addon.DB.FilterAppearance and (string.find(LineText, ITEM_COSMETIC_LEARN) or string.find(LineText, GetLocaleString('Use: Collect the appearance')) or string.find(LineText, 'Add this appearance')) then
 					return CacheOpenableResult(itemID, true)
 				end
 
@@ -348,24 +349,40 @@ function addon:DebugItemOpenability(itemID)
 	print(string.format('Type: %s / %s', itemType or 'nil', itemSubType or 'nil'))
 	print(string.format('Link: %s', itemLink))
 
-	-- Check cache first
+	-- Show cache status but don't return early — always run the full analysis
 	if addon.GlobalDB and addon.GlobalDB.itemCache then
 		if addon.GlobalDB.itemCache.openable[itemID] then
-			print('|cff00FF00CACHED RESULT:|r Item is marked as openable')
-			return
+			print('|cff00FF00CACHED:|r Item was cached as openable (running full analysis below)')
 		elseif addon.GlobalDB.itemCache.notOpenable[itemID] then
-			print('|cffFF0000CACHED RESULT:|r Item is marked as not openable')
-			return
+			print('|cffFF0000CACHED:|r Item was cached as not openable (running full analysis below)')
+		else
+			print('|cffFFFFFFCACHED:|r Item is not in cache')
 		end
 	end
 
 	print('|cffFFFFFF--- Analysis Process ------|r')
 
+	local foundMatch = false
+	local excludedByType = false
+	local suggestedFilters = {}
+
+	-- Weapon/Armor exclusion check (mirrors CheckItem logic)
+	if itemType == 'Weapon' or itemType == 'Armor' then
+		local isCosmetic = itemSubType == 'Cosmetic'
+		if isCosmetic then
+			print('|cffFFFFFF NOTE:|r Item is ' .. itemType .. ' / Cosmetic — Armor exclusion bypassed for appearance check')
+		else
+			print('|cffFF0000EXCLUDED:|r Item type is ' .. itemType .. ' — excluded to prevent false positives (e.g., "companion" in flavor text)')
+			print('|cffFFFFFF         Only Cosmetic armor/weapons bypass this exclusion')
+			excludedByType = true
+		end
+	end
+
 	-- Quick type check
 	local Consumable = itemType == 'Consumable' or itemSubType == 'Consumables'
 	if Consumable and itemSubType and string.find(itemSubType, 'Curio') and addon.DB.FilterCurios then
 		print('|cff00FF00MATCH:|r Curio item (FilterCurios enabled)')
-		return
+		foundMatch = true
 	else
 		print('|cffFFFFFF SKIP:|r Not a Curio or FilterCurios disabled')
 	end
@@ -373,9 +390,10 @@ function addon:DebugItemOpenability(itemID)
 	if itemType == 'Housing' then
 		if addon.DB.FilterHousingDecor then
 			print('|cff00FF00MATCH:|r Housing Decor item (FilterHousingDecor enabled)')
-			return
+			foundMatch = true
 		else
 			print('|cffFFAA00POTENTIAL:|r Housing Decor item found, but FilterHousingDecor is disabled')
+			suggestedFilters.FilterHousingDecor = true
 		end
 	end
 
@@ -387,9 +405,6 @@ function addon:DebugItemOpenability(itemID)
 
 	local numLines = Tooltip:NumLines()
 	print(string.format('Tooltip has %d lines', numLines))
-
-	local foundMatch = false
-	local suggestedFilters = {}
 	for i = 1, numLines do
 		local leftLine = _G['BagOpenableTooltipTextLeft' .. i]
 		local rightLine = _G['BagOpenableTooltipTextRight' .. i]
@@ -425,7 +440,7 @@ function addon:DebugItemOpenability(itemID)
 				end
 
 				-- Check appearance
-				if string.find(LineText, ITEM_COSMETIC_LEARN) or string.find(LineText, GetLocaleString('Use: Collect the appearance')) then
+				if string.find(LineText, ITEM_COSMETIC_LEARN) or string.find(LineText, GetLocaleString('Use: Collect the appearance')) or string.find(LineText, 'Add this appearance') then
 					if addon.DB.FilterAppearance then
 						print('|cff00FF00MATCH:|r Appearance item (FilterAppearance enabled)')
 						foundMatch = true
@@ -584,7 +599,9 @@ function addon:DebugItemOpenability(itemID)
 
 	-- Final result
 	print('|cffFFFFFF--- Final Result ------|r')
-	if foundMatch then
+	if excludedByType and not foundMatch then
+		print('|cffFF0000RESULT:|r Item is excluded by type (' .. itemType .. ') — tooltip matches are ignored')
+	elseif foundMatch then
 		print('|cff00FF00RESULT:|r Item should be highlighted as openable')
 	else
 		if next(suggestedFilters) then
@@ -668,8 +685,8 @@ local function CheckItemWithCategory(itemDetails)
 	-- Quick check for common openable item types
 	local itemName, _, _, _, _, itemType, itemSubType = C_Item.GetItemInfo(itemLink)
 
-	-- Exclude armor/weapons
-	if itemType == 'Weapon' or itemType == 'Armor' then
+	-- Exclude non-cosmetic armor/weapons
+	if (itemType == 'Weapon' or itemType == 'Armor') and itemSubType ~= 'Cosmetic' then
 		return nil
 	end
 
@@ -717,7 +734,7 @@ local function CheckItemWithCategory(itemDetails)
 				end
 
 				-- Cosmetics/Appearance
-				if addon.DB.FilterAppearance and (string.find(LineText, ITEM_COSMETIC_LEARN) or string.find(LineText, GetLocaleString('Use: Collect the appearance'))) then
+				if addon.DB.FilterAppearance and (string.find(LineText, ITEM_COSMETIC_LEARN) or string.find(LineText, GetLocaleString('Use: Collect the appearance')) or string.find(LineText, 'Add this appearance')) then
 					return 'Cosmetics'
 				end
 
