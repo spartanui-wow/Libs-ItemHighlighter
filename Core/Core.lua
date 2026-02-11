@@ -251,7 +251,10 @@ local function CheckItem(itemDetails)
 					return CacheOpenableResult(itemID, true)
 				end
 
-				if addon.DB.FilterAppearance and (string.find(LineText, ITEM_COSMETIC_LEARN) or string.find(LineText, GetLocaleString('Use: Collect the appearance')) or string.find(LineText, 'Add this appearance')) then
+				if
+					addon.DB.FilterAppearance
+					and (string.find(LineText, ITEM_COSMETIC_LEARN) or string.find(LineText, GetLocaleString('Use: Collect the appearance')) or string.find(LineText, 'Add this appearance'))
+				then
 					return CacheOpenableResult(itemID, true)
 				end
 
@@ -734,7 +737,10 @@ local function CheckItemWithCategory(itemDetails)
 				end
 
 				-- Cosmetics/Appearance
-				if addon.DB.FilterAppearance and (string.find(LineText, ITEM_COSMETIC_LEARN) or string.find(LineText, GetLocaleString('Use: Collect the appearance')) or string.find(LineText, 'Add this appearance')) then
+				if
+					addon.DB.FilterAppearance
+					and (string.find(LineText, ITEM_COSMETIC_LEARN) or string.find(LineText, GetLocaleString('Use: Collect the appearance')) or string.find(LineText, 'Add this appearance'))
+				then
 					return 'Cosmetics'
 				end
 
