@@ -73,6 +73,12 @@ local Localized = {
 		['reputation with'] = 'reputación con',
 		['reputation towards'] = 'reputación hacia',
 	},
+    ruRU = {
+	    ['Use: Teaches you how to summon this mount'] = 'Использование: Обучает призыву этого маунта',
+	    ['Use: Collect the appearance'] = 'Использование: Собирает внешний вид',
+	    ['reputation with'] = 'репутация с',
+	    ['reputation towards'] = 'репутация к'
+    },		
 	frFR = {
 		['Use: Teaches you how to summon this mount'] = 'Utilisation: Vous apprend à invoquer cette monture',
 		['Use: Collect the appearance'] = "Utilisation: Collectionnez l'apparence",
