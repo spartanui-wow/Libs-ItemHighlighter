@@ -1,4 +1,4 @@
-## Interface: 120001, 120000, 50503, 38000, 11508, 20505
+## Interface: 120001, 120005, 50503, 38000, 11508, 20505
 ## Title: BetterBags - Openable Items
 ## Notes: Filters all items that have a <Right Click to Open> or Use option
 ## IconTexture: Interface/Addons/BetterBags-Openable/Icon
