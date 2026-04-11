@@ -121,7 +121,7 @@ root.REP_USE_TEXT = REP_USE_TEXT
 local Tooltip = CreateFrame('GameTooltip', 'BagOpenableTooltip', nil, 'GameTooltipTemplate')
 
 -- Cache version: bump this when detection logic changes to auto-clear stale notOpenable cache
-local CACHE_VERSION = 4
+local CACHE_VERSION = 5
 
 local SearchItems = {
 	'Open the container',
@@ -205,6 +205,15 @@ local function CheckItem(itemDetails)
 
 	if addon.DB.FilterHousingDecor and itemType == 'Housing' then
 		return CacheOpenableResult(itemID, true)
+	end
+
+	-- Check hasLoot flag from container API (detects items with <Right Click to Open>
+	-- that the hidden tooltip scanner cannot see)
+	if addon.DB.FilterContainers and bagID and slotID then
+		local containerInfo = C_Container.GetContainerItemInfo(bagID, slotID)
+		if containerInfo and containerInfo.hasLoot then
+			return CacheOpenableResult(itemID, true)
+		end
 	end
 
 	-- Use tooltip scanning for detailed analysis

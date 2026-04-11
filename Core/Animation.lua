@@ -312,47 +312,47 @@ end
 ---@return boolean visible True if indicator should be visible
 local function UpdateIndicatorFrame(frame, itemDetails)
 	local frameName = frame:GetName() or 'anonymous'
-	Log('UpdateIndicatorFrame called for frame: ' .. frameName, 'info')
+	Log('UpdateIndicatorFrame called for frame: ' .. frameName, 'debug')
 
 	-- Check if any indicator features are enabled
 	if not addon.DB.ShowGlow and not addon.DB.ShowIndicator then
-		Log('All indicator features disabled, hiding widget')
+		Log('All indicator features disabled, hiding widget', 'debug')
 		CleanupAnimation(frame)
 		frame:Hide()
 		return false
 	end
 
-	Log('ShowGlow: ' .. tostring(addon.DB.ShowGlow) .. ', ShowIndicator: ' .. tostring(addon.DB.ShowIndicator), 'info')
+	Log('ShowGlow: ' .. tostring(addon.DB.ShowGlow) .. ', ShowIndicator: ' .. tostring(addon.DB.ShowIndicator), 'debug')
 
 	if not itemDetails or not itemDetails.itemLink or itemDetails.itemLink == '' then
-		Log('No itemDetails or itemLink provided, hiding widget')
+		Log('No itemDetails or itemLink provided, hiding widget', 'debug')
 		CleanupAnimation(frame)
 		frame:Hide()
 		return false
 	end
 
-	Log('Checking item: ' .. (itemDetails.itemLink or 'unknown'), 'info')
+	Log('Checking item: ' .. (itemDetails.itemLink or 'unknown'), 'debug')
 	local isOpenable = root.CheckItem(itemDetails)
-	Log('Is item openable? ' .. tostring(isOpenable), 'info')
+	Log('Is item openable? ' .. tostring(isOpenable), 'debug')
 
 	if isOpenable then
-		Log('Item is openable, configuring display elements for frame: ' .. frameName, 'info')
+		Log('Item is openable, configuring display elements for frame: ' .. frameName, 'debug')
 
 		-- Always show frame if any feature is enabled for openable items
 		frame:Show()
-		Log('Frame:Show() called on: ' .. frameName, 'info')
+		Log('Frame:Show() called on: ' .. frameName, 'debug')
 
 		-- Handle glow animation (texture1 and texture2)
 		if addon.DB.ShowGlow then
-			Log('Showing glow animation for frame: ' .. frameName, 'info')
+			Log('Showing glow animation for frame: ' .. frameName, 'debug')
 			-- Show glow textures
 			if frame.texture1 then
 				frame.texture1:Show()
-				Log('Texture1 (blue) shown - Alpha: ' .. frame.texture1:GetAlpha() .. ', IsShown: ' .. tostring(frame.texture1:IsShown()), 'info')
+				Log('Texture1 (blue) shown - Alpha: ' .. frame.texture1:GetAlpha() .. ', IsShown: ' .. tostring(frame.texture1:IsShown()), 'debug')
 			end
 			if frame.texture2 then
 				frame.texture2:Show()
-				Log('Texture2 (green) shown - Alpha: ' .. frame.texture2:GetAlpha() .. ', IsShown: ' .. tostring(frame.texture2:IsShown()), 'info')
+				Log('Texture2 (green) shown - Alpha: ' .. frame.texture2:GetAlpha() .. ', IsShown: ' .. tostring(frame.texture2:IsShown()), 'debug')
 			end
 
 			-- Ensure animation is running for glow effect
