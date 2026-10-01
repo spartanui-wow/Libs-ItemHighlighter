@@ -67,7 +67,11 @@ local function UpdateSlotIndicator(button)
 	local bagID = button:GetBagID()
 	local slotID = button:GetID()
 
-	if not bagID or not slotID then
+	if type(bagID) ~= 'number' or type(slotID) ~= 'number' or bagID < 0 or slotID < 1 then
+		if indicatorFrames[button] then
+			root.Animation.CleanupAnimation(indicatorFrames[button])
+			indicatorFrames[button]:Hide()
+		end
 		return
 	end
 
