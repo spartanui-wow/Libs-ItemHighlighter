@@ -10,6 +10,8 @@ local BlizzardIntegration = {
 -- Storage for our indicator frames
 local indicatorFrames = {}
 local hookedButtons = {}
+local bankPanelButtons = {}
+local bankPanelHooked = false
 
 -- Check if Blizzard bags are available (always true)
 function BlizzardIntegration:IsAvailable()
@@ -39,6 +41,16 @@ function BlizzardIntegration:AreBagsVisible()
 	return false
 end
 
+-- Tabbed bank buttons (Retail, WoW Forever) know their bank tab and slot instead of a bag ID
+local function GetButtonBagAndSlot(button)
+	if button.GetBankTabID and button.GetContainerSlotID then
+		return button:GetBankTabID(), button:GetContainerSlotID()
+	end
+	if button.GetBagID then
+		return button:GetBagID(), button:GetID()
+	end
+end
+
 -- Create indicator frame for a bag slot
 local function CreateSlotIndicator(button)
 	if indicatorFrames[button] then
@@ -63,9 +75,7 @@ local function UpdateSlotIndicator(button)
 		return
 	end
 
-	-- Get item info from the button
-	local bagID = button:GetBagID()
-	local slotID = button:GetID()
+	local bagID, slotID = GetButtonBagAndSlot(button)
 
 	if type(bagID) ~= 'number' or type(slotID) ~= 'number' or bagID < 0 or slotID < 1 then
 		if indicatorFrames[button] then
@@ -133,6 +143,14 @@ local function HookBagSlot(button)
 	Log('Hooked bag slot button events', 'debug')
 end
 
+local function HookBankPanelButton(button)
+	if hookedButtons[button] then
+		return
+	end
+	hookedButtons[button] = true
+	bankPanelButtons[button] = true
+end
+
 -- Find and hook all bag slot buttons
 local function HookAllBagSlots()
 	-- Hook combined bags frame items (modern UI)
@@ -170,8 +188,11 @@ local function HookAllBagSlots()
 		end
 	end
 
-	-- Hook bank slots if available
-	if BankFrame and BankFrame:IsVisible() then
+	if BankPanel and BankPanel.EnumerateValidItems and BankPanel:IsVisible() then
+		for itemButton in BankPanel:EnumerateValidItems() do
+			HookBankPanelButton(itemButton)
+		end
+	elseif BankFrame and BankFrame:IsVisible() then
 		-- Hook generic bank slots
 		for i = 1, NUM_BANKGENERIC_SLOTS or 28 do
 			local button = _G['BankFrameItem' .. i]
@@ -221,6 +242,7 @@ end
 
 function BlizzardIntegration:OnEnable()
 	Log('Blizzard bags integration enabling')
+	self.enabled = true
 
 	-- Register for bag update events
 	addon:RegisterEvent('BAG_UPDATE_DELAYED', OnBagUpdate)
@@ -242,7 +264,8 @@ function BlizzardIntegration:OnEnable()
 	addon:RegisterEvent('BANKFRAME_CLOSED', function()
 		-- Clean up bank indicators
 		for button, frame in pairs(indicatorFrames) do
-			if button:GetParent() and button:GetParent():GetName() and string.find(button:GetParent():GetName(), 'BankFrame') then
+			local parent = button:GetParent()
+			if bankPanelButtons[button] or (parent and parent:GetName() and string.find(parent:GetName(), 'BankFrame')) then
 				root.Animation.CleanupAnimation(frame)
 				frame:Hide()
 			end
@@ -264,6 +287,19 @@ function BlizzardIntegration:OnEnable()
 			Log('Combined bags frame hidden', 'debug')
 			root.Animation.StopGlobalTimer()
 		end)
+	end
+
+	-- Bank tab buttons come from a pool and are handed new slots whenever the tab changes
+	if not bankPanelHooked and BankPanel and BankPanel.GenerateItemSlotsForSelectedTab then
+		hooksecurefunc(BankPanel, 'GenerateItemSlotsForSelectedTab', function()
+			if BlizzardIntegration.enabled then
+				addon:ScheduleTimer(function()
+					HookAllBagSlots()
+					RefreshAllIndicators()
+				end, 0.1)
+			end
+		end)
+		bankPanelHooked = true
 	end
 
 	-- Hook bag toggle functions
@@ -293,6 +329,7 @@ end
 
 function BlizzardIntegration:OnDisable()
 	Log('Blizzard bags integration disabling')
+	self.enabled = false
 
 	-- Clean up all indicators
 	for button, frame in pairs(indicatorFrames) do
@@ -301,6 +338,7 @@ function BlizzardIntegration:OnDisable()
 	end
 	indicatorFrames = {}
 	hookedButtons = {}
+	bankPanelButtons = {}
 
 	-- Unregister events
 	addon:UnregisterEvent('BAG_UPDATE_DELAYED')

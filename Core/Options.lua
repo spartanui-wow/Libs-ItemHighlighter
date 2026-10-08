@@ -746,7 +746,9 @@ function addon:SetupOptions()
 	local optionsTable = GetOptions()
 	local optionsKey = addonName:gsub('%-', '')
 	LibStub('AceConfig-3.0'):RegisterOptionsTable(optionsKey, optionsTable)
-	LibStub('AceConfigDialog-3.0'):AddToBlizOptions(optionsKey, root.displayName)
+	-- Clients with C_SettingsUtil (Retail, WoW Forever) only open a settings page by its ID, not its name
+	local _, categoryID = LibStub('AceConfigDialog-3.0'):AddToBlizOptions(optionsKey, root.displayName)
+	local settingsCategory = categoryID or root.displayName
 	Log('Options panel registered with Blizzard Interface')
 
 	-- Initialize the custom lists
@@ -796,7 +798,7 @@ function addon:SetupOptions()
 
 			print(output)
 		else
-			Settings.OpenToCategory(root.displayName)
+			Settings.OpenToCategory(settingsCategory)
 		end
 	end
 

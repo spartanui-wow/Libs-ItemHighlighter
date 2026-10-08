@@ -220,6 +220,15 @@ local function CleanupAnimation(cornerFrame)
 	cornerFrame.updateFunction = nil
 end
 
+-- Blizzard's own UI never uses the treasure map atlas, so it may be missing on some clients
+local function SetAtlasOrFile(texture, atlas, fallbackFile)
+	if C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(atlas) then
+		texture:SetAtlas(atlas)
+	else
+		texture:SetTexture(fallbackFile)
+	end
+end
+
 ---Create a standard openable indicator frame
 ---@param parent Frame The parent frame (item button)
 ---@return Frame frame The indicator frame
@@ -287,7 +296,7 @@ local function CreateIndicatorFrame(parent)
 	-- Static indicator icon texture
 	local texture3 = frame:CreateTexture(nil, 'OVERLAY', nil, 7)
 	texture3:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', 0, 0)
-	texture3:SetAtlas('ShipMissionIcon-Treasure-Map')
+	SetAtlasOrFile(texture3, 'ShipMissionIcon-Treasure-Map', 'Interface/Icons/INV_Misc_Map_01')
 	texture3:SetSize(20, 20)
 	texture3:SetAlpha(1) -- Always full alpha when visible
 	texture3:Hide() -- Initially hidden, shown when indicator is enabled

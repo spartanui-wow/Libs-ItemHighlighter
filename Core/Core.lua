@@ -89,7 +89,14 @@ function GetLocaleString(key)
 	return key
 end
 
-local REP_USE_TEXT = QUEST_REPUTATION_REWARD_TOOLTIP:match('%%d%s*(.-)%s*%%s') or GetLocaleString('reputation with')
+-- Game text differs between clients and a missing string would break every pattern search below
+local USE_TEXT = ITEM_SPELL_TRIGGER_ONUSE or 'Use:'
+local TOY_TEXT = ITEM_TOY_ONUSE or 'Adds this toy to your Toy Box'
+local COSMETIC_LEARN_TEXT = ITEM_COSMETIC_LEARN or 'Collect the appearance'
+local LOCKED_TEXT = LOCKED or 'Locked'
+local CREATE_ITEM_TEXT = (ITEM_CREATE_LOOT_SPEC_ITEM or 'Create a soulbound item appropriate for your loot specialization (%s).'):gsub(' %(%%s%)%.', '')
+
+local REP_USE_TEXT = (QUEST_REPUTATION_REWARD_TOOLTIP and QUEST_REPUTATION_REWARD_TOOLTIP:match('%%d%s*(.-)%s*%%s')) or GetLocaleString('reputation with')
 
 -- LibAT Logger Integration
 local logger = nil
@@ -262,25 +269,23 @@ local function CheckItem(itemDetails)
 
 				if
 					addon.DB.FilterAppearance
-					and (string.find(LineText, ITEM_COSMETIC_LEARN) or string.find(LineText, GetLocaleString('Use: Collect the appearance')) or string.find(LineText, 'Add this appearance'))
+					and (string.find(LineText, COSMETIC_LEARN_TEXT) or string.find(LineText, GetLocaleString('Use: Collect the appearance')) or string.find(LineText, 'Add this appearance'))
 				then
 					return CacheOpenableResult(itemID, true)
 				end
 
-				-- Remove (%s). from ITEM_CREATE_LOOT_SPEC_ITEM
-				local CreateItemString = ITEM_CREATE_LOOT_SPEC_ITEM:gsub(' %(%%s%)%.', '')
 				if
 					addon.DB.CreatableItem
-					and (string.find(LineText, CreateItemString) or string.find(LineText, 'Create a soulbound item for your class') or string.find(LineText, 'item appropriate for your class'))
+					and (string.find(LineText, CREATE_ITEM_TEXT) or string.find(LineText, 'Create a soulbound item for your class') or string.find(LineText, 'item appropriate for your class'))
 				then
 					return CacheOpenableResult(itemID, true)
 				end
 
-				if LineText == LOCKED and addon.DB.FilterLockboxes then
+				if LineText == LOCKED_TEXT and addon.DB.FilterLockboxes then
 					return CacheOpenableResult(itemID, true)
 				end
 
-				if addon.DB.FilterToys and string.find(LineText, ITEM_TOY_ONUSE) then
+				if addon.DB.FilterToys and string.find(LineText, TOY_TEXT) then
 					return CacheOpenableResult(itemID, true)
 				end
 
@@ -295,7 +300,7 @@ local function CheckItem(itemDetails)
 				if
 					addon.DB.FilterRepGain
 					and (string.find(LineText, REP_USE_TEXT) or string.find(LineText, GetLocaleString('reputation towards')) or string.find(LineText, GetLocaleString('reputation with')))
-					and string.find(LineText, ITEM_SPELL_TRIGGER_ONUSE)
+					and string.find(LineText, USE_TEXT)
 				then
 					return CacheOpenableResult(itemID, true)
 				end
@@ -304,7 +309,7 @@ local function CheckItem(itemDetails)
 					return CacheOpenableResult(itemID, true)
 				end
 
-				if addon.DB.FilterGenericUse and string.find(LineText, ITEM_SPELL_TRIGGER_ONUSE) then
+				if addon.DB.FilterGenericUse and string.find(LineText, USE_TEXT) then
 					return CacheOpenableResult(itemID, true)
 				end
 			end
@@ -452,7 +457,7 @@ function addon:DebugItemOpenability(itemID)
 				end
 
 				-- Check appearance
-				if string.find(LineText, ITEM_COSMETIC_LEARN) or string.find(LineText, GetLocaleString('Use: Collect the appearance')) or string.find(LineText, 'Add this appearance') then
+				if string.find(LineText, COSMETIC_LEARN_TEXT) or string.find(LineText, GetLocaleString('Use: Collect the appearance')) or string.find(LineText, 'Add this appearance') then
 					if addon.DB.FilterAppearance then
 						print('|cff00FF00MATCH:|r Appearance item (FilterAppearance enabled)')
 						foundMatch = true
@@ -463,8 +468,7 @@ function addon:DebugItemOpenability(itemID)
 				end
 
 				-- Check creatable items
-				local CreateItemString = ITEM_CREATE_LOOT_SPEC_ITEM:gsub(' %(%%s%)%.', '')
-				if string.find(LineText, CreateItemString) or string.find(LineText, 'Create a soulbound item for your class') or string.find(LineText, 'item appropriate for your class') then
+				if string.find(LineText, CREATE_ITEM_TEXT) or string.find(LineText, 'Create a soulbound item for your class') or string.find(LineText, 'item appropriate for your class') then
 					if addon.DB.CreatableItem then
 						print('|cff00FF00MATCH:|r Creatable item (CreatableItem enabled)')
 						foundMatch = true
@@ -475,7 +479,7 @@ function addon:DebugItemOpenability(itemID)
 				end
 
 				-- Check locked items
-				if LineText == LOCKED then
+				if LineText == LOCKED_TEXT then
 					if addon.DB.FilterLockboxes then
 						print('|cff00FF00MATCH:|r Locked item (FilterLockboxes enabled)')
 						foundMatch = true
@@ -486,7 +490,7 @@ function addon:DebugItemOpenability(itemID)
 				end
 
 				-- Check toys
-				if string.find(LineText, ITEM_TOY_ONUSE) then
+				if string.find(LineText, TOY_TEXT) then
 					if addon.DB.FilterToys then
 						print('|cff00FF00MATCH:|r Toy item (FilterToys enabled)')
 						foundMatch = true
@@ -521,7 +525,7 @@ function addon:DebugItemOpenability(itemID)
 				-- Check reputation
 				if
 					(string.find(LineText, REP_USE_TEXT) or string.find(LineText, GetLocaleString('reputation towards')) or string.find(LineText, GetLocaleString('reputation with')))
-					and string.find(LineText, ITEM_SPELL_TRIGGER_ONUSE)
+					and string.find(LineText, USE_TEXT)
 				then
 					if addon.DB.FilterRepGain then
 						print('|cff00FF00MATCH:|r Reputation item (FilterRepGain enabled)')
@@ -544,7 +548,7 @@ function addon:DebugItemOpenability(itemID)
 				end
 
 				-- Check generic use
-				if string.find(LineText, ITEM_SPELL_TRIGGER_ONUSE) then
+				if string.find(LineText, USE_TEXT) then
 					if addon.DB.FilterGenericUse then
 						print('|cff00FF00MATCH:|r Generic use item (FilterGenericUse enabled)')
 						foundMatch = true
@@ -741,29 +745,28 @@ local function CheckItemWithCategory(itemDetails)
 				end
 
 				-- Lockboxes
-				if LineText == LOCKED and addon.DB.FilterLockboxes then
+				if LineText == LOCKED_TEXT and addon.DB.FilterLockboxes then
 					return 'Lockboxes'
 				end
 
 				-- Cosmetics/Appearance
 				if
 					addon.DB.FilterAppearance
-					and (string.find(LineText, ITEM_COSMETIC_LEARN) or string.find(LineText, GetLocaleString('Use: Collect the appearance')) or string.find(LineText, 'Add this appearance'))
+					and (string.find(LineText, COSMETIC_LEARN_TEXT) or string.find(LineText, GetLocaleString('Use: Collect the appearance')) or string.find(LineText, 'Add this appearance'))
 				then
 					return 'Cosmetics'
 				end
 
 				-- Creatable Items
-				local CreateItemString = ITEM_CREATE_LOOT_SPEC_ITEM:gsub(' %(%%s%)%.', '')
 				if
 					addon.DB.CreatableItem
-					and (string.find(LineText, CreateItemString) or string.find(LineText, 'Create a soulbound item for your class') or string.find(LineText, 'item appropriate for your class'))
+					and (string.find(LineText, CREATE_ITEM_TEXT) or string.find(LineText, 'Create a soulbound item for your class') or string.find(LineText, 'item appropriate for your class'))
 				then
 					return 'Creatable Items'
 				end
 
 				-- Toys
-				if addon.DB.FilterToys and string.find(LineText, ITEM_TOY_ONUSE) then
+				if addon.DB.FilterToys and string.find(LineText, TOY_TEXT) then
 					return 'Toys'
 				end
 
@@ -781,7 +784,7 @@ local function CheckItemWithCategory(itemDetails)
 				if
 					addon.DB.FilterRepGain
 					and (string.find(LineText, REP_USE_TEXT) or string.find(LineText, GetLocaleString('reputation towards')) or string.find(LineText, GetLocaleString('reputation with')))
-					and string.find(LineText, ITEM_SPELL_TRIGGER_ONUSE)
+					and string.find(LineText, USE_TEXT)
 				then
 					return 'Reputation'
 				end
@@ -797,7 +800,7 @@ local function CheckItemWithCategory(itemDetails)
 				end
 
 				-- Generic Use (checked last)
-				if addon.DB.FilterGenericUse and string.find(LineText, ITEM_SPELL_TRIGGER_ONUSE) then
+				if addon.DB.FilterGenericUse and string.find(LineText, USE_TEXT) then
 					return 'Generic Use Items'
 				end
 			end
@@ -847,8 +850,27 @@ local function GetItemStatistics()
 		['Whitelist Items'] = 0,
 	}
 
-	-- Scan all bag slots
-	for bagID = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
+	local bagIDs = {}
+	-- NUM_TOTAL_EQUIPPED_BAG_SLOTS adds the reagent bag on clients that have one
+	for bagID = BACKPACK_CONTAINER, NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS do
+		table.insert(bagIDs, bagID)
+	end
+
+	if addon.DB and addon.DB.scanBank then
+		if Enum.BagIndex and Enum.BagIndex.CharacterBankTab_1 then
+			local firstTab = Enum.BagIndex.CharacterBankTab_1
+			for bagID = firstTab, firstTab + (NUM_CHARACTER_BANK_SLOTS or 0) - 1 do
+				table.insert(bagIDs, bagID)
+			end
+		elseif NUM_BANKBAGSLOTS then
+			table.insert(bagIDs, BANK_CONTAINER)
+			for bagID = NUM_BAG_SLOTS + 1, NUM_BAG_SLOTS + NUM_BANKBAGSLOTS do
+				table.insert(bagIDs, bagID)
+			end
+		end
+	end
+
+	for _, bagID in ipairs(bagIDs) do
 		local numSlots = C_Container.GetContainerNumSlots(bagID)
 		if numSlots then
 			for slotID = 1, numSlots do
@@ -862,29 +884,6 @@ local function GetItemStatistics()
 					local category = CheckItemWithCategory(itemDetails)
 					if category and stats[category] then
 						stats[category] = stats[category] + 1
-					end
-				end
-			end
-		end
-	end
-
-	-- Scan bank if it's open
-	if addon.DB and addon.DB.scanBank then
-		for bagID = NUM_BAG_SLOTS + 1, NUM_BAG_SLOTS + NUM_BANKBAGSLOTS do
-			local numSlots = C_Container.GetContainerNumSlots(bagID)
-			if numSlots then
-				for slotID = 1, numSlots do
-					local itemLink = C_Container.GetContainerItemLink(bagID, slotID)
-					if itemLink then
-						local itemDetails = {
-							itemLink = itemLink,
-							bagID = bagID,
-							slotID = slotID,
-						}
-						local category = CheckItemWithCategory(itemDetails)
-						if category and stats[category] then
-							stats[category] = stats[category] + 1
-						end
 					end
 				end
 			end
